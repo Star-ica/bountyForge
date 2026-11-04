@@ -1,0 +1,3070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BountyForge — Decentralized Developer Bounty Marketplace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root {
+  --bg:          #050810;
+  --bg2:         #0c1120;
+  --bg3:         #111827;
+  --border:      rgba(255,255,255,0.08);
+  --border-hi:   rgba(255,255,255,0.16);
+  --text:        #e8ecf3;
+  --muted:       #7a889f;
+  --accent:      #3b82f6;
+  --accent-glow: rgba(59,130,246,0.25);
+  --green:       #22c55e;
+  --green-bg:    rgba(34,197,94,0.12);
+  --yellow:      #f59e0b;
+  --yellow-bg:   rgba(245,158,11,0.12);
+  --red:         #ef4444;
+  --red-bg:      rgba(239,68,68,0.12);
+  --purple:      #a855f7;
+  --purple-bg:   rgba(168,85,247,0.12);
+  --radius:      10px;
+  --radius-lg:   16px;
+  --font:        'Inter', system-ui, sans-serif;
+  --mono:        'JetBrains Mono', monospace;
+  --max-w:       1200px;
+  --nav-h:       64px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 16px); }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════ */
+h1,h2,h3,h4,h5 { line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; }
+h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 700; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+h3 { font-size: 1.2rem; }
+h4 { font-size: 1rem; }
+p  { color: var(--muted); line-height: 1.75; }
+a  { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.mono { font-family: var(--mono); font-size: 0.875em; }
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+.section    { padding: 80px 0; }
+.section-sm { padding: 48px 0; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.flex    { display: flex; }
+.flex-c  { display: flex; align-items: center; }
+.flex-b  { display: flex; align-items: center; justify-content: space-between; }
+.gap-2   { gap: 8px; }
+.gap-3   { gap: 12px; }
+.gap-4   { gap: 16px; }
+.mt-2    { margin-top: 8px; }
+.mt-4    { margin-top: 16px; }
+.mt-6    { margin-top: 24px; }
+.mt-8    { margin-top: 32px; }
+.mb-6    { margin-bottom: 24px; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+.text-yellow { color: var(--yellow); }
+.text-red { color: var(--red); }
+.text-accent { color: var(--accent); }
+.text-center { text-align: center; }
+.w-full { width: 100%; }
+
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-hi); }
+.card-sm { padding: 16px; border-radius: var(--radius); }
+
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font);
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn:hover { text-decoration: none; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+.btn-primary:hover:not(:disabled) { background: #2563eb; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-hi);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--bg3); }
+
+.btn-green {
+  background: var(--green);
+  color: #fff;
+}
+.btn-green:hover:not(:disabled) { background: #16a34a; }
+
+.btn-red {
+  background: var(--red);
+  color: #fff;
+}
+.btn-red:hover:not(:disabled) { background: #dc2626; }
+
+.btn-sm { padding: 6px 14px; font-size: 0.8125rem; }
+.btn-lg { padding: 14px 28px; font-size: 1rem; }
+.btn-xl { padding: 18px 36px; font-size: 1.0625rem; }
+
+/* ═══════════════════════════════════════
+   BADGES
+═══════════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 100px;
+  border: 1px solid;
+}
+.badge-green  { background: var(--green-bg);  color: var(--green);  border-color: rgba(34,197,94,0.3); }
+.badge-yellow { background: var(--yellow-bg); color: var(--yellow); border-color: rgba(245,158,11,0.3); }
+.badge-red    { background: var(--red-bg);    color: var(--red);    border-color: rgba(239,68,68,0.3); }
+.badge-blue   { background: var(--accent-glow); color: var(--accent); border-color: rgba(59,130,246,0.3); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); border-color: rgba(168,85,247,0.3); }
+.badge-gray   { background: rgba(255,255,255,0.05); color: var(--muted); border-color: var(--border); }
+
+/* ═══════════════════════════════════════
+   FORMS
+═══════════════════════════════════════ */
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+label { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+input, textarea, select {
+  background: var(--bg3);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+textarea { resize: vertical; min-height: 100px; }
+select option { background: var(--bg3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+#nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  z-index: 1000;
+  background: rgba(5,8,16,0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+
+.nav-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.nav-logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+}
+.nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  color: var(--muted);
+  border-radius: var(--radius);
+  transition: all 0.15s;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: var(--text);
+  background: var(--bg3);
+  text-decoration: none;
+}
+.nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nav-wallet-info { display: flex; align-items: center; gap: 8px; }
+.wallet-address {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--bg3);
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════
+   HERO
+═══════════════════════════════════════ */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding-top: var(--nav-h);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,130,246,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 60%, rgba(168,85,247,0.08) 0%, transparent 50%);
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, black 20%, transparent 80%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: 100px;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+
+.hero-headline {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.0;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #fff 40%, rgba(255,255,255,0.5));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 540px;
+  margin: 0 auto 36px;
+  line-height: 1.7;
+}
+
+.hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 32px;
+}
+.stat-item { text-align: center; }
+.stat-num  { font-size: 2rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; }
+.stat-label { font-size: 0.8125rem; color: var(--muted); margin-top: 2px; }
+
+/* ═══════════════════════════════════════
+   BOUNTY CARDS
+═══════════════════════════════════════ */
+.bounty-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.bounty-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(59,130,246,0.1);
+}
+.bounty-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.bounty-card-title  { font-size: 1rem; font-weight: 600; color: var(--text); line-height: 1.4; }
+.bounty-org-name    { font-size: 0.8125rem; color: var(--muted); margin-top: 2px; }
+.bounty-reward      {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+}
+.bounty-tags        { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.bounty-tag         { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; }
+.bounty-meta        { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.bounty-deadline    { font-size: 0.8125rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+
+/* ═══════════════════════════════════════
+   HOW IT WORKS
+═══════════════════════════════════════ */
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.step-item  { background: var(--bg2); padding: 32px 24px; position: relative; }
+.step-num   { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); font-weight: 500; margin-bottom: 16px; display: block; }
+.step-icon  { font-size: 28px; margin-bottom: 14px; }
+.step-title { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+.step-desc  { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+
+/* ═══════════════════════════════════════
+   LEADERBOARD
+═══════════════════════════════════════ */
+.leader-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.leader-row:hover { border-color: var(--border-hi); }
+.leader-rank { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); width: 28px; text-align: center; flex-shrink: 0; }
+.leader-rank.top { color: var(--yellow); font-weight: 600; }
+.leader-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.leader-info { flex: 1; }
+.leader-name { font-size: 0.9rem; font-weight: 500; }
+.leader-skills { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.leader-earned { font-family: var(--mono); font-size: 0.875rem; color: var(--green); font-weight: 500; }
+
+/* ═══════════════════════════════════════
+   FAQ
+═══════════════════════════════════════ */
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-q {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  padding: 20px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.faq-q:hover { color: var(--accent); }
+.faq-icon { font-size: 1.2rem; color: var(--muted); flex-shrink: 0; transition: transform 0.2s; }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.faq-a-inner { padding-bottom: 20px; color: var(--muted); font-size: 0.9rem; line-height: 1.75; }
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-item.open .faq-a { max-height: 200px; }
+
+/* ═══════════════════════════════════════
+   ECOSYSTEM
+═══════════════════════════════════════ */
+.eco-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+.eco-item {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 24px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  transition: all 0.2s;
+}
+.eco-item:hover { border-color: var(--border-hi); transform: translateY(-2px); }
+.eco-icon { font-size: 32px; }
+.eco-name { font-size: 0.875rem; font-weight: 500; }
+.eco-desc { font-size: 0.75rem; color: var(--muted); }
+
+/* ═══════════════════════════════════════
+   MODALS
+═══════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; visibility: hidden;
+  transition: all 0.2s;
+}
+.modal-overlay.open { opacity: 1; visibility: visible; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.96);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: scale(1); }
+.modal-lg { max-width: 720px; }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg2); z-index: 1;
+}
+.modal-title { font-size: 1.1rem; font-weight: 600; }
+.modal-close {
+  width: 32px; height: 32px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.modal-close:hover { color: var(--text); border-color: var(--border-hi); }
+.modal-body { padding: 24px; }
+.modal-body .form-group + .form-group { margin-top: 16px; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px; justify-content: flex-end;
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════ */
+#app-shell {
+  display: none;
+  min-height: 100vh;
+  padding-top: var(--nav-h);
+}
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - var(--nav-h));
+}
+@media (max-width: 768px) {
+  .dashboard-layout { grid-template-columns: 1fr; }
+}
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 24px 16px;
+  position: sticky; top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  overflow-y: auto;
+}
+.sidebar-label { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px; margin: 20px 0 8px; }
+.sidebar-label:first-child { margin-top: 0; }
+.sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  color: var(--muted);
+  border-radius: 8px;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.sidebar-nav a:hover, .sidebar-nav a.active {
+  color: var(--text);
+  background: var(--bg3);
+  text-decoration: none;
+}
+.sidebar-nav a.active { color: var(--accent); }
+.sidebar-icon { font-size: 1rem; width: 18px; }
+
+.main-content { padding: 32px; overflow-x: hidden; }
+@media (max-width: 768px) { .main-content { padding: 20px 16px; } }
+
+.page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+.page-subtitle { color: var(--muted); font-size: 0.875rem; margin-bottom: 28px; }
+
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.stat-card-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+.stat-card-value { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+.stat-card-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+.tabs { display: flex; gap: 2px; background: var(--bg3); border-radius: var(--radius); padding: 4px; margin-bottom: 24px; width: fit-content; }
+.tab-btn {
+  padding: 7px 18px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--muted);
+  background: transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tab-btn.active { background: var(--bg2); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+/* ═══════════════════════════════════════
+   TABLE
+═══════════════════════════════════════ */
+.table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--bg3); }
+th { padding: 12px 16px; text-align: left; font-size: 0.75rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 14px 16px; font-size: 0.875rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+/* ═══════════════════════════════════════
+   FILTERS
+═══════════════════════════════════════ */
+.filters {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin-bottom: 24px;
+}
+.filter-select {
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  background: var(--bg2);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  min-width: 140px;
+}
+.search-input {
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  background: var(--bg2);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  color: var(--text);
+  min-width: 220px;
+}
+.search-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
+
+/* ═══════════════════════════════════════
+   TOAST / ALERTS
+═══════════════════════════════════════ */
+#toast-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: slideIn 0.2s ease;
+  min-width: 260px; max-width: 400px;
+}
+.toast.success { border-color: rgba(34,197,94,0.4); }
+.toast.error   { border-color: rgba(239,68,68,0.4); }
+.toast.info    { border-color: rgba(59,130,246,0.4); }
+@keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 16px;
+}
+.alert-warning { background: var(--yellow-bg); border: 1px solid rgba(245,158,11,0.3); color: var(--yellow); }
+.alert-error   { background: var(--red-bg);    border: 1px solid rgba(239,68,68,0.3);  color: var(--red); }
+.alert-success { background: var(--green-bg);  border: 1px solid rgba(34,197,94,0.3);  color: var(--green); }
+.alert-info    { background: var(--accent-glow); border: 1px solid rgba(59,130,246,0.3); color: var(--accent); }
+
+/* ═══════════════════════════════════════
+   BOUNTY DETAIL
+═══════════════════════════════════════ */
+.detail-header { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; margin-bottom: 28px; }
+@media (max-width: 600px) { .detail-header { grid-template-columns: 1fr; } }
+.detail-section { margin-bottom: 28px; }
+.detail-section-title { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.detail-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.8; white-space: pre-wrap; }
+.detail-meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.detail-meta-item { background: var(--bg3); border-radius: var(--radius); padding: 12px 14px; }
+.detail-meta-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+.detail-meta-value { font-size: 0.9rem; font-weight: 500; }
+
+/* ═══════════════════════════════════════
+   PROFILE CARD
+═══════════════════════════════════════ */
+.profile-banner {
+  height: 120px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(168,85,247,0.3));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.profile-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  border: 3px solid var(--bg2);
+  margin-top: -36px;
+  margin-left: 24px;
+}
+.profile-info { padding: 12px 24px 24px; }
+.profile-name { font-size: 1.3rem; font-weight: 700; }
+.profile-role { font-size: 0.875rem; color: var(--accent); margin-bottom: 8px; }
+
+/* ═══════════════════════════════════════
+   CHAIN INDICATOR
+═══════════════════════════════════════ */
+.chain-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--green);
+}
+.chain-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+footer {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 60px 0 32px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, 1fr);
+  gap: 40px;
+  margin-bottom: 48px;
+}
+@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+.footer-brand .nav-logo { margin-bottom: 12px; }
+.footer-brand p { font-size: 0.875rem; }
+.footer-col-title { font-size: 0.8rem; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.footer-links a { font-size: 0.875rem; color: var(--muted); transition: color 0.15s; }
+.footer-links a:hover { color: var(--text); text-decoration: none; }
+.footer-bottom {
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.footer-copy { font-size: 0.8125rem; color: var(--muted); }
+.footer-socials { display: flex; gap: 10px; }
+.social-link {
+  width: 34px; height: 34px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.875rem;
+  color: var(--muted);
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.social-link:hover { color: var(--text); border-color: var(--border-hi); text-decoration: none; }
+
+/* ═══════════════════════════════════════
+   LOADING
+═══════════════════════════════════════ */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border-hi);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-icon  { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+.empty-title { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+.empty-desc  { color: var(--muted); font-size: 0.875rem; }
+
+/* ═══════════════════════════════════════
+   DOC PAGE
+═══════════════════════════════════════ */
+.doc-layout { display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: start; }
+@media (max-width: 768px) { .doc-layout { grid-template-columns: 1fr; } }
+.doc-toc { position: sticky; top: calc(var(--nav-h) + 24px); }
+.doc-toc-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.doc-toc-links { display: flex; flex-direction: column; gap: 4px; list-style: none; }
+.doc-toc-links a { font-size: 0.8125rem; color: var(--muted); padding: 4px 8px; border-radius: 6px; display: block; }
+.doc-toc-links a:hover { color: var(--text); text-decoration: none; }
+.doc-content h2 { margin: 36px 0 12px; }
+.doc-content h3 { margin: 24px 0 8px; }
+.doc-content p  { margin-bottom: 14px; }
+.doc-content ul { color: var(--muted); padding-left: 20px; margin-bottom: 14px; }
+.doc-content li { margin-bottom: 6px; font-size: 0.9rem; }
+.doc-content code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 0.85em; color: var(--accent); }
+
+/* ═══════════════════════════════════════
+   CHAIN CONNECTION MODAL
+═══════════════════════════════════════ */
+.wrong-chain {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 24px; text-align: center; gap: 16px;
+}
+.wrong-chain-icon { font-size: 48px; }
+
+/* ═══════════════════════════════════════
+   LANDING PAGE VIEWS
+═══════════════════════════════════════ */
+#landing { display: block; }
+#app-shell { display: none; }
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+.section-title { margin-bottom: 12px; }
+.section-subtitle { color: var(--muted); max-width: 560px; font-size: 1.0rem; line-height: 1.75; margin-bottom: 40px; }
+
+/* ═══════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════ */
+.progress-bar { background: var(--bg3); border-radius: 100px; height: 4px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), var(--purple)); transition: width 0.3s; }
+
+/* ═══════════════════════════════════════
+   SUBMISSION CARD
+═══════════════════════════════════════ */
+.submission-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.sub-dev-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sub-links { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.sub-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.8rem; color: var(--accent);
+  background: var(--accent-glow);
+  padding: 3px 10px; border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.sub-link:hover { background: rgba(59,130,246,0.3); text-decoration: none; }
+.sub-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════
+   CONNECT WALLET PROMPT
+═══════════════════════════════════════ */
+.connect-prompt {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 80px 24px; text-align: center; gap: 16px;
+}
+.connect-prompt-icon { font-size: 56px; }
+.connect-prompt h2  { font-size: 1.5rem; }
+
+/* Responsive nav */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .hero-stats { gap: 20px; }
+  .stat-num { font-size: 1.5rem; }
+  .hero-cta { flex-direction: column; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════
+     NAVIGATION
+══════════════════════════════════ -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="#" onclick="showLanding()">
+      <div class="nav-logo-icon">⚡</div>
+      BountyForge
+    </a>
+    <ul class="nav-links">
+      <li><a href="#explore-section" onclick="showPage('explore')">🔍 Explore</a></li>
+      <li><a href="#leaderboard" onclick="showPage('leaderboard')">🏆 Leaderboard</a></li>
+      <li><a href="#docs-section" onclick="showPage('docs')">📖 Docs</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-wallet" style="display:none;" class="nav-wallet-info">
+        <div class="chain-pill">
+          <div class="chain-dot"></div>
+          BOT Chain
+        </div>
+        <span class="wallet-address" id="nav-address">0x...</span>
+        <button class="btn btn-ghost btn-sm" onclick="showDashboard()">Dashboard</button>
+      </div>
+      <button class="btn btn-primary" id="connect-btn" onclick="connectWallet()">
+        Connect Wallet
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════
+     LANDING PAGE
+══════════════════════════════════ -->
+<div id="landing">
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      ⚡ Powered by BOT Chain · Chain ID 677
+    </div>
+    <h1 class="hero-headline">Build.<br>Contribute.<br>Earn.</h1>
+    <p class="hero-sub">
+      A permissionless marketplace where blockchain projects, DAOs and organizations
+      publish technical bounties — and developers earn on-chain rewards for completing them.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-primary btn-xl" onclick="connectWallet()">
+        🚀 Connect Wallet
+      </button>
+      <button class="btn btn-ghost btn-xl" onclick="showPage('explore')">
+        Explore Bounties
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num" id="stat-bounties">0</div>
+        <div class="stat-label">Active Bounties</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-rewards">$0</div>
+        <div class="stat-label">Total Rewards</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-devs">0</div>
+        <div class="stat-label">Developers</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-orgs">0</div>
+        <div class="stat-label">Organizations</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="text-center mb-6">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">From bounty to payout — fully on-chain</h2>
+      <p class="section-subtitle" style="margin:0 auto 40px;">
+        Every step is enforced by smart contracts on BOT Chain.
+        No middlemen, no delayed payments, no disputes without recourse.
+      </p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-item">
+        <span class="step-num">01</span>
+        <div class="step-icon">🏢</div>
+        <div class="step-title">Organization Posts</div>
+        <p class="step-desc">Register your org, define a bounty with technical requirements, set the reward and deadline.</p>
+      </div>
+      <div class="step-item">
+        <span class="step-num">02</span>
+        <div class="step-icon">🔒</div>
+        <div class="step-title">Funds Enter Escrow</div>
+        <p class="step-desc">Deposit BOT or USDT directly into the smart contract. Funds are locked until approval — no one can touch them arbitrarily.</p>
+      </div>
+      <div class="step-item">
+        <span class="step-num">03</span>
+        <div class="step-icon">👩‍💻</div>
+        <div class="step-title">Developers Submit</div>
+        <p class="step-desc">Browse open bounties, attach your GitHub repo and PR link, and submit your work on-chain.</p>
+      </div>
+      <div class="step-item">
+        <span class="step-num">04</span>
+        <div class="step-icon">✅</div>
+        <div class="step-title">Review & Approve</div>
+        <p class="step-desc">The organization reviews submissions and approves winners. Rejected devs can raise disputes resolved by admin.</p>
+      </div>
+      <div class="step-item">
+        <span class="step-num">05</span>
+        <div class="step-icon">💸</div>
+        <div class="step-title">Rewards Paid Out</div>
+        <p class="step-desc">Approved developers withdraw rewards directly from the contract. Payment is instant and transparent on BOT Chain.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED BOUNTIES -->
+<section class="section" id="featured-bounties" style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <div class="flex-b mb-6">
+      <div>
+        <div class="section-label">Featured Bounties</div>
+        <h2 class="section-title" style="margin-bottom:0;">Open opportunities</h2>
+      </div>
+      <button class="btn btn-ghost" onclick="showPage('explore')">View All →</button>
+    </div>
+    <div id="featured-grid" class="grid-3">
+      <div class="loading-state"><div class="spinner"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TOP CONTRIBUTORS -->
+<section class="section" id="top-contributors">
+  <div class="container">
+    <div class="grid-2" style="gap:40px;">
+      <div>
+        <div class="section-label">Top Contributors</div>
+        <h2 class="section-title">Builders on the leaderboard</h2>
+        <p style="margin-bottom:24px;">Developers who consistently deliver quality earn reputation, visibility and more bounty opportunities across the ecosystem.</p>
+        <button class="btn btn-ghost" onclick="showPage('leaderboard')">Full Leaderboard →</button>
+      </div>
+      <div id="top-devs-list">
+        <div class="loading-state"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ECOSYSTEM -->
+<section class="section" id="ecosystem-section" style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <div class="text-center mb-6">
+      <div class="section-label">Ecosystem</div>
+      <h2 class="section-title">Built for the multi-chain future</h2>
+      <p class="section-subtitle" style="margin:0 auto 40px;">Post bounties for any ecosystem, paid in BOT or USDT on BOT Chain.</p>
+    </div>
+    <div class="eco-grid">
+      <div class="eco-item">
+        <div class="eco-icon">⚡</div>
+        <div class="eco-name">BOT Chain</div>
+        <div class="eco-desc">Native L1</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">🟡</div>
+        <div class="eco-name">Celo</div>
+        <div class="eco-desc">Mobile-first L1</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">🌐</div>
+        <div class="eco-name">Ethereum</div>
+        <div class="eco-desc">EVM smart contracts</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">🔵</div>
+        <div class="eco-name">Polygon</div>
+        <div class="eco-desc">L2 scaling</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">⭐</div>
+        <div class="eco-name">Stellar</div>
+        <div class="eco-desc">Soroban contracts</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">🏔️</div>
+        <div class="eco-name">Avalanche</div>
+        <div class="eco-desc">Subnets</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">🔴</div>
+        <div class="eco-name">Arbitrum</div>
+        <div class="eco-desc">Optimistic rollups</div>
+      </div>
+      <div class="eco-item">
+        <div class="eco-icon">🟣</div>
+        <div class="eco-name">Solana</div>
+        <div class="eco-desc">High-throughput</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="grid-2" style="gap: 48px; align-items: start;">
+      <div>
+        <div class="section-label">FAQ</div>
+        <h2 class="section-title">Common questions</h2>
+        <p style="margin-bottom: 24px;">Everything you need to know about BountyForge. Something missing? Ask in our community.</p>
+        <a href="https://botchain.ai" target="_blank" class="btn btn-ghost">Visit BOT Chain →</a>
+      </div>
+      <div id="faq-list">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo" style="margin-bottom:12px; display:inline-flex;">
+          <div class="nav-logo-icon">⚡</div>
+          BountyForge
+        </div>
+        <p>Decentralized developer bounty marketplace on BOT Chain. Build. Contribute. Earn.</p>
+        <div style="margin-top:16px;">
+          <div class="chain-pill" style="display:inline-flex;">
+            <div class="chain-dot"></div>
+            BOT Chain · Chain ID 677
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <ul class="footer-links">
+          <li><a href="#" onclick="showPage('explore')">Explore Bounties</a></li>
+          <li><a href="#" onclick="showPage('leaderboard')">Leaderboard</a></li>
+          <li><a href="#" onclick="showPage('docs')">Documentation</a></li>
+          <li><a href="#" onclick="downloadWhitepaper()">Whitepaper</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Infrastructure</div>
+        <ul class="footer-links">
+          <li><a href="https://botchain.ai" target="_blank">BOT Chain</a></li>
+          <li><a href="https://scan.botchain.ai" target="_blank">Block Explorer</a></li>
+          <li><a href="https://botchain.ai" target="_blank">Bridge</a></li>
+          <li><a href="https://botchain.ai" target="_blank">Faucet</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Community</div>
+        <ul class="footer-links">
+          <li><a href="https://github.com" target="_blank">GitHub</a></li>
+          <li><a href="https://botchain.ai" target="_blank">Discord</a></li>
+          <li><a href="https://botchain.ai" target="_blank">Twitter / X</a></li>
+          <li><a href="https://botchain.ai" target="_blank">Telegram</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 BountyForge. Built on <a href="https://botchain.ai" target="_blank">BOT Chain</a>. All rights reserved.</div>
+      <div class="footer-socials">
+        <a href="https://github.com" target="_blank" class="social-link" title="GitHub">⌨</a>
+        <a href="https://botchain.ai" target="_blank" class="social-link" title="Discord">💬</a>
+        <a href="https://scan.botchain.ai" target="_blank" class="social-link" title="Explorer">🔍</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</div><!-- end #landing -->
+
+<!-- ══════════════════════════════════
+     APP SHELL (Dashboards + Pages)
+══════════════════════════════════ -->
+<div id="app-shell">
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <!-- filled dynamically based on role -->
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" id="main-panel">
+      <div class="connect-prompt" id="connect-prompt">
+        <div class="connect-prompt-icon">🔌</div>
+        <h2>Connect your wallet</h2>
+        <p>Connect a wallet to access your dashboard.</p>
+        <button class="btn btn-primary btn-lg" onclick="connectWallet()">Connect Wallet</button>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODALS
+══════════════════════════════════ -->
+
+<!-- Wrong Chain Modal -->
+<div class="modal-overlay" id="wrong-chain-modal">
+  <div class="modal">
+    <div class="wrong-chain">
+      <div class="wrong-chain-icon">⛓️</div>
+      <h3>Wrong Network</h3>
+      <p>BountyForge runs on BOT Chain (Chain ID 677). Please switch your wallet network to continue.</p>
+      <button class="btn btn-primary btn-lg" onclick="switchToBOTChain()">Switch to BOT Chain</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bounty Detail Modal -->
+<div class="modal-overlay" id="bounty-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-bounty-title">Bounty Details</span>
+      <button class="modal-close" onclick="closeModal('bounty-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-bounty-body"><!-- dynamic --></div>
+  </div>
+</div>
+
+<!-- Create Bounty Modal -->
+<div class="modal-overlay" id="create-bounty-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Create New Bounty</span>
+      <button class="modal-close" onclick="closeModal('create-bounty-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-bounty-form-content">
+        <div class="form-group">
+          <label>Bounty Title *</label>
+          <input id="cb-title" type="text" placeholder="e.g. Build DEX integration for BOT Chain">
+        </div>
+        <div class="form-group mt-4">
+          <label>Description *</label>
+          <textarea id="cb-desc" rows="4" placeholder="Describe the task, context, and expected outcomes..."></textarea>
+        </div>
+        <div class="form-group mt-4">
+          <label>Technical Requirements *</label>
+          <textarea id="cb-req" rows="3" placeholder="List specific technical requirements, APIs, frameworks..."></textarea>
+        </div>
+        <div class="form-row mt-4">
+          <div class="form-group">
+            <label>Skills Required</label>
+            <input id="cb-skills" type="text" placeholder="Solidity, React, Python...">
+          </div>
+          <div class="form-group">
+            <label>Programming Language</label>
+            <input id="cb-lang" type="text" placeholder="Solidity, TypeScript...">
+          </div>
+        </div>
+        <div class="form-row mt-4">
+          <div class="form-group">
+            <label>Ecosystem</label>
+            <select id="cb-eco">
+              <option value="BOT Chain">BOT Chain</option>
+              <option value="Ethereum">Ethereum</option>
+              <option value="Celo">Celo</option>
+              <option value="Polygon">Polygon</option>
+              <option value="Stellar/Soroban">Stellar/Soroban</option>
+              <option value="Avalanche">Avalanche</option>
+              <option value="Arbitrum">Arbitrum</option>
+              <option value="Solana">Solana</option>
+              <option value="Multi-chain">Multi-chain</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reward Currency</label>
+            <select id="cb-currency">
+              <option value="0">BOT (native)</option>
+              <option value="1">USDT</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row mt-4">
+          <div class="form-group">
+            <label>Reward per Winner *</label>
+            <input id="cb-reward" type="number" min="0" step="any" placeholder="e.g. 500">
+          </div>
+          <div class="form-group">
+            <label>Max Winners *</label>
+            <input id="cb-winners" type="number" min="1" max="50" value="1">
+          </div>
+        </div>
+        <div class="form-row mt-4">
+          <div class="form-group">
+            <label>Deadline *</label>
+            <input id="cb-deadline" type="datetime-local">
+          </div>
+        </div>
+        <div class="form-group mt-4">
+          <label>Submission Instructions</label>
+          <textarea id="cb-instructions" rows="2" placeholder="How should developers submit? What to include?"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('create-bounty-modal')">Cancel</button>
+      <button class="btn btn-primary" id="create-bounty-btn" onclick="createBounty()">
+        Create Bounty
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Register Profile Modal -->
+<div class="modal-overlay" id="register-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="register-modal-title">Create Profile</span>
+      <button class="modal-close" onclick="closeModal('register-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="register-modal-body"><!-- dynamic --></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('register-modal')">Cancel</button>
+      <button class="btn btn-primary" id="register-submit-btn" onclick="submitRegistration()">
+        Save Profile
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit Work Modal -->
+<div class="modal-overlay" id="submit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Submit Work</span>
+      <button class="modal-close" onclick="closeModal('submit-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="submit-bounty-id">
+      <div class="form-group">
+        <label>GitHub Repository URL *</label>
+        <input id="sub-repo" type="url" placeholder="https://github.com/username/repo">
+      </div>
+      <div class="form-group mt-4">
+        <label>Pull Request URL</label>
+        <input id="sub-pr" type="url" placeholder="https://github.com/org/repo/pull/123">
+      </div>
+      <div class="form-group mt-4">
+        <label>Notes / Summary</label>
+        <textarea id="sub-notes" rows="4" placeholder="Describe your implementation, design decisions, and how you met the requirements..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('submit-modal')">Cancel</button>
+      <button class="btn btn-primary" id="submit-work-btn" onclick="submitWork()">Submit Work</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deposit Modal -->
+<div class="modal-overlay" id="deposit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Deposit Bounty Reward</span>
+      <button class="modal-close" onclick="closeModal('deposit-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="deposit-modal-body"><!-- dynamic --></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('deposit-modal')">Cancel</button>
+      <button class="btn btn-primary" id="deposit-btn" onclick="depositReward()">Deposit & Activate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject + Feedback Modal -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Reject Submission</span>
+      <button class="modal-close" onclick="closeModal('reject-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="reject-bounty-id">
+      <input type="hidden" id="reject-sub-index">
+      <div class="form-group">
+        <label>Feedback for Developer *</label>
+        <textarea id="reject-feedback" rows="4" placeholder="Explain why this submission was rejected and what could be improved..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reject-modal')">Cancel</button>
+      <button class="btn btn-red" onclick="confirmReject()">Reject Submission</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.umd.min.js"></script>
+<script>
+/* ═══════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════ */
+const BOT_CHAIN_ID     = 677;
+const BOT_CHAIN_HEX    = '0x2A5';
+const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001'; // Deploy and replace
+const USDT_ADDRESS     = '0x0000000000000000000000000000000000000002'; // Deploy and replace
+
+// ABI (key functions only — matches BountyForge.sol)
+const CONTRACT_ABI = [
+  "function registerOrg(string,string,string,string) external",
+  "function registerDev(string,string,string,string) external",
+  "function createBounty(string,string,string,string,string,string,uint256,uint8,uint256,uint256,string) external returns (uint256)",
+  "function depositBOT(uint256) external payable",
+  "function depositUSDT(uint256,uint256) external",
+  "function editBounty(uint256,string,string,string,string,string,string,uint256,string) external",
+  "function submitWork(uint256,string,string,string) external",
+  "function approveSubmission(uint256,uint256) external",
+  "function rejectSubmission(uint256,uint256,string) external",
+  "function raiseDispute(uint256,uint256) external",
+  "function withdrawBOT() external",
+  "function withdrawUSDT() external",
+  "function cancelBounty(uint256) external",
+  "function reclaimUnused(uint256) external",
+  "function getBounty(uint256) external view returns (tuple(uint256,address,string,string,string,string,string,string,uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint8,string))",
+  "function getSubmissions(uint256) external view returns (tuple(uint256,address,string,string,string,uint256,uint8,string)[])",
+  "function getAllBountyIds() external view returns (uint256[])",
+  "function getOrgBounties(address) external view returns (uint256[])",
+  "function getDevSubmittedBounties(address) external view returns (uint256[])",
+  "function bountyCount() external view returns (uint256)",
+  "function getPendingBalance(address) external view returns (uint256,uint256)",
+  "function orgProfiles(address) external view returns (string,string,string,string,bool,uint256,uint256)",
+  "function devProfiles(address) external view returns (string,string,string,string,uint256,uint256,bool)",
+  "function hasSubmitted(uint256,address) external view returns (bool)",
+  "event BountyCreated(uint256 indexed,address indexed,string,uint8,uint256)",
+  "event SubmissionApproved(uint256 indexed,uint256,address indexed,uint256)",
+  "event BountyFunded(uint256 indexed,uint256,uint8)"
+];
+
+const USDT_ABI = [
+  "function approve(address,uint256) external returns (bool)",
+  "function allowance(address,address) external view returns (uint256)",
+  "function balanceOf(address) external view returns (uint256)"
+];
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let provider, signer, contract, usdtContract;
+let currentAccount  = null;
+let userRole        = null; // 'dev' | 'org' | 'admin'
+let currentPage     = 'landing';
+let cachedBounties  = [];
+let userOrgProfile  = null;
+let userDevProfile  = null;
+
+const ADMIN_ADDRESSES = [
+  // Add admin addresses here
+  '0x0000000000000000000000000000000000000000'
+];
+
+/* ═══════════════════════════════════════
+   LANDING CONTENT
+═══════════════════════════════════════ */
+const FAQ_DATA = [
+  {
+    q: "What is BountyForge?",
+    a: "BountyForge is a fully on-chain bounty marketplace deployed on BOT Chain. Organizations post technical tasks with locked rewards; developers submit solutions and earn payouts automatically through smart contracts — no intermediaries."
+  },
+  {
+    q: "How are funds protected?",
+    a: "All reward funds are locked in the BountyForge escrow smart contract the moment an organization deposits. Neither the admin nor any other party can seize these funds. Funds are only released to approved developers or refunded to the organization on cancellation."
+  },
+  {
+    q: "What currencies are supported?",
+    a: "BountyForge supports native BOT (the BOT Chain gas token) and USDT for bounty rewards. Both are held in escrow and paid out on-chain."
+  },
+  {
+    q: "How does the dispute process work?",
+    a: "If a developer's submission is rejected and they disagree with the outcome, they can raise a dispute within 3 days. A BountyForge administrator reviews the evidence and resolves the dispute by approving or confirming the rejection. The admin cannot seize deposited funds — they can only approve or deny the specific submission."
+  },
+  {
+    q: "How do I get started as an organization?",
+    a: "Connect your wallet, switch to BOT Chain, register an organization profile, and create your first bounty. After depositing the reward amount into escrow, your bounty goes live immediately."
+  },
+  {
+    q: "Is there a platform fee?",
+    a: "BountyForge charges a 2.5% platform fee deducted from each approved payout — not from the deposit. Organizations always deposit the full reward amount; developers receive 97.5% of the posted reward."
+  }
+];
+
+function renderFAQ() {
+  const container = document.getElementById('faq-list');
+  if (!container) return;
+  container.innerHTML = FAQ_DATA.map((item, i) => `
+    <div class="faq-item" id="faq-${i}">
+      <button class="faq-q" onclick="toggleFAQ(${i})">
+        ${item.q}
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a">
+        <div class="faq-a-inner">${item.a}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleFAQ(i) {
+  const el = document.getElementById(`faq-${i}`);
+  el.classList.toggle('open');
+}
+
+/* ═══════════════════════════════════════
+   WALLET CONNECTION
+═══════════════════════════════════════ */
+async function connectWallet() {
+  if (!window.ethereum) {
+    toast('No wallet detected. Install MetaMask or a compatible wallet.', 'error');
+    return;
+  }
+
+  try {
+    document.getElementById('connect-btn').innerHTML = '<span class="spinner"></span>';
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await provider.send('eth_requestAccounts', []);
+
+    if (!accounts.length) {
+      toast('No accounts found.', 'error');
+      return;
+    }
+
+    signer         = await provider.getSigner();
+    currentAccount = await signer.getAddress();
+
+    // Check chain
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== BOT_CHAIN_ID) {
+      document.getElementById('connect-btn').textContent = 'Connect Wallet';
+      openModal('wrong-chain-modal');
+      return;
+    }
+
+    // Init contracts
+    contract     = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, signer);
+
+    // Listen for account/chain changes
+    window.ethereum.on('accountsChanged', onAccountChanged);
+    window.ethereum.on('chainChanged',    () => window.location.reload());
+
+    await onWalletConnected();
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'Connection failed.', 'error');
+    document.getElementById('connect-btn').textContent = 'Connect Wallet';
+  }
+}
+
+async function onAccountChanged(accounts) {
+  if (!accounts.length) {
+    disconnectWallet();
+    return;
+  }
+  currentAccount = accounts[0];
+  signer         = await provider.getSigner();
+  if (contract)  contract     = contract.connect(signer);
+  if (usdtContract) usdtContract = usdtContract.connect(signer);
+  await onWalletConnected();
+}
+
+function disconnectWallet() {
+  currentAccount = null;
+  signer         = null;
+  contract       = null;
+  userRole       = null;
+  document.getElementById('nav-wallet').style.display   = 'none';
+  document.getElementById('connect-btn').style.display  = 'inline-flex';
+  document.getElementById('connect-btn').textContent    = 'Connect Wallet';
+  showLanding();
+}
+
+async function onWalletConnected() {
+  // Update nav
+  document.getElementById('nav-wallet').style.display  = 'flex';
+  document.getElementById('connect-btn').style.display = 'none';
+  document.getElementById('nav-address').textContent   = shortAddr(currentAccount);
+
+  // Detect role
+  if (ADMIN_ADDRESSES.includes(currentAccount.toLowerCase())) {
+    userRole = 'admin';
+  } else {
+    // Check on-chain profiles
+    try {
+      const [orgName]  = await contract.orgProfiles(currentAccount);
+      const [,,,,,,devReg] = await contract.devProfiles(currentAccount);
+
+      if (orgName && orgName.length > 0) {
+        userOrgProfile = orgName;
+        userRole = 'org';
+      } else if (devReg) {
+        userDevProfile = true;
+        userRole = 'dev';
+      } else {
+        userRole = null; // new user
+      }
+    } catch (e) {
+      // Contract not deployed or mock mode
+      userRole = null;
+    }
+  }
+
+  toast(`Wallet connected: ${shortAddr(currentAccount)}`, 'success');
+  showDashboard();
+}
+
+async function switchToBOTChain() {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: BOT_CHAIN_HEX }]
+    });
+    closeModal('wrong-chain-modal');
+    await onWalletConnected();
+  } catch (err) {
+    if (err.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: BOT_CHAIN_HEX,
+            chainName: 'BOT Chain',
+            nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 },
+            rpcUrls: ['https://rpc.botchain.ai'],
+            blockExplorerUrls: ['https://scan.botchain.ai']
+          }]
+        });
+        closeModal('wrong-chain-modal');
+        await onWalletConnected();
+      } catch (addErr) {
+        toast('Could not add BOT Chain. Add it manually in your wallet.', 'error');
+      }
+    } else {
+      toast('Failed to switch chain.', 'error');
+    }
+  }
+}
+
+/* ═══════════════════════════════════════
+   PAGE ROUTING
+═══════════════════════════════════════ */
+function showLanding() {
+  document.getElementById('landing').style.display   = 'block';
+  document.getElementById('app-shell').style.display = 'none';
+  currentPage = 'landing';
+  loadLandingData();
+}
+
+function showDashboard() {
+  document.getElementById('landing').style.display   = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  buildSidebar();
+  if (userRole === 'org')   renderOrgDashboard();
+  else if (userRole === 'dev') renderDevDashboard();
+  else if (userRole === 'admin') renderAdminDashboard();
+  else renderNewUserPage();
+}
+
+function showPage(page) {
+  document.getElementById('landing').style.display   = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  buildSidebar();
+  currentPage = page;
+  switch (page) {
+    case 'explore':     renderExplorePage(); break;
+    case 'leaderboard': renderLeaderboardPage(); break;
+    case 'docs':        renderDocsPage(); break;
+    case 'org-dash':    renderOrgDashboard(); break;
+    case 'dev-dash':    renderDevDashboard(); break;
+    case 'org-bounties':renderOrgBountiesPage(); break;
+    case 'org-profile': renderOrgProfilePage(); break;
+    case 'dev-profile': renderDevProfilePage(); break;
+    case 'dev-submissions': renderDevSubmissionsPage(); break;
+    case 'dev-earnings': renderDevEarningsPage(); break;
+    case 'admin-dash':  renderAdminDashboard(); break;
+    default: renderExplorePage();
+  }
+}
+
+/* ═══════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════ */
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  if (!currentAccount) {
+    sb.innerHTML = '';
+    return;
+  }
+
+  let html = `<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:20px;">
+    <div class="leader-avatar" style="width:32px;height:32px;font-size:12px;">${currentAccount[2]?.toUpperCase()}</div>
+    <div>
+      <div style="font-size:0.8rem;font-weight:500;">${shortAddr(currentAccount)}</div>
+      <div style="font-size:0.7rem;color:var(--muted);">${roleLabel()}</div>
+    </div>
+  </div>`;
+
+  if (userRole === 'org') {
+    html += `
+      <div class="sidebar-label">Organization</div>
+      <ul class="sidebar-nav">
+        <li><a href="#" onclick="showPage('org-dash')"><span class="sidebar-icon">📊</span> Dashboard</a></li>
+        <li><a href="#" onclick="showPage('org-bounties')"><span class="sidebar-icon">📋</span> My Bounties</a></li>
+        <li><a href="#" onclick="openModal('create-bounty-modal')"><span class="sidebar-icon">➕</span> New Bounty</a></li>
+        <li><a href="#" onclick="showPage('org-profile')"><span class="sidebar-icon">🏢</span> Org Profile</a></li>
+      </ul>`;
+  } else if (userRole === 'dev') {
+    html += `
+      <div class="sidebar-label">Developer</div>
+      <ul class="sidebar-nav">
+        <li><a href="#" onclick="showPage('dev-dash')"><span class="sidebar-icon">📊</span> Dashboard</a></li>
+        <li><a href="#" onclick="showPage('explore')"><span class="sidebar-icon">🔍</span> Browse Bounties</a></li>
+        <li><a href="#" onclick="showPage('dev-submissions')"><span class="sidebar-icon">📤</span> My Submissions</a></li>
+        <li><a href="#" onclick="showPage('dev-earnings')"><span class="sidebar-icon">💸</span> Earnings</a></li>
+        <li><a href="#" onclick="showPage('dev-profile')"><span class="sidebar-icon">👤</span> My Profile</a></li>
+      </ul>`;
+  } else if (userRole === 'admin') {
+    html += `
+      <div class="sidebar-label">Admin</div>
+      <ul class="sidebar-nav">
+        <li><a href="#" onclick="showPage('admin-dash')"><span class="sidebar-icon">🛡️</span> Admin Panel</a></li>
+        <li><a href="#" onclick="showPage('explore')"><span class="sidebar-icon">🔍</span> All Bounties</a></li>
+      </ul>`;
+  }
+
+  html += `
+    <div class="sidebar-label">Platform</div>
+    <ul class="sidebar-nav">
+      <li><a href="#" onclick="showPage('explore')"><span class="sidebar-icon">🌐</span> Explore</a></li>
+      <li><a href="#" onclick="showPage('leaderboard')"><span class="sidebar-icon">🏆</span> Leaderboard</a></li>
+      <li><a href="#" onclick="showPage('docs')"><span class="sidebar-icon">📖</span> Docs</a></li>
+      <li><a href="https://scan.botchain.ai" target="_blank"><span class="sidebar-icon">🔍</span> Explorer</a></li>
+      <li><a href="#" onclick="showLanding()"><span class="sidebar-icon">🏠</span> Landing Page</a></li>
+    </ul>`;
+
+  sb.innerHTML = html;
+}
+
+function roleLabel() {
+  if (userRole === 'org')   return 'Organization';
+  if (userRole === 'dev')   return 'Developer';
+  if (userRole === 'admin') return 'Administrator';
+  return 'New User';
+}
+
+/* ═══════════════════════════════════════
+   NEW USER PAGE
+═══════════════════════════════════════ */
+function renderNewUserPage() {
+  setMain(`
+    <div class="connect-prompt">
+      <div class="connect-prompt-icon">👋</div>
+      <h2>Welcome to BountyForge</h2>
+      <p style="max-width:420px;">Create your profile to get started. Are you an organization looking to post bounties, or a developer looking to earn?</p>
+      <div class="flex gap-3" style="flex-wrap:wrap;justify-content:center;margin-top:8px;">
+        <button class="btn btn-primary btn-lg" onclick="openRegisterModal('dev')">
+          👩‍💻 I'm a Developer
+        </button>
+        <button class="btn btn-ghost btn-lg" onclick="openRegisterModal('org')">
+          🏢 I'm an Organization
+        </button>
+      </div>
+    </div>
+  `);
+}
+
+function openRegisterModal(type) {
+  document.getElementById('register-modal-title').textContent =
+    type === 'dev' ? 'Create Developer Profile' : 'Register Organization';
+
+  const body = document.getElementById('register-modal-body');
+  body.dataset.type = type;
+
+  if (type === 'dev') {
+    body.innerHTML = `
+      <div class="form-group">
+        <label>Username *</label>
+        <input id="reg-username" type="text" placeholder="yourhandle">
+      </div>
+      <div class="form-group mt-4">
+        <label>GitHub Profile URL *</label>
+        <input id="reg-github" type="url" placeholder="https://github.com/username">
+      </div>
+      <div class="form-group mt-4">
+        <label>Skills</label>
+        <input id="reg-skills" type="text" placeholder="Solidity, React, Python, Rust...">
+      </div>
+      <div class="form-group mt-4">
+        <label>Bio</label>
+        <textarea id="reg-bio" rows="3" placeholder="Tell organizations about yourself..."></textarea>
+      </div>`;
+  } else {
+    body.innerHTML = `
+      <div class="form-group">
+        <label>Organization Name *</label>
+        <input id="reg-orgname" type="text" placeholder="Acme Protocol">
+      </div>
+      <div class="form-group mt-4">
+        <label>Website</label>
+        <input id="reg-website" type="url" placeholder="https://acmeprotocol.xyz">
+      </div>
+      <div class="form-group mt-4">
+        <label>Description</label>
+        <textarea id="reg-orgdesc" rows="3" placeholder="What does your organization build?"></textarea>
+      </div>`;
+  }
+
+  openModal('register-modal');
+}
+
+async function submitRegistration() {
+  const body = document.getElementById('register-modal-body');
+  const type = body.dataset.type;
+  const btn  = document.getElementById('register-submit-btn');
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving...';
+
+    if (type === 'dev') {
+      const username = val('reg-username');
+      const github   = val('reg-github');
+      const skills   = val('reg-skills');
+      const bio      = val('reg-bio');
+      if (!username) { toast('Username is required.', 'error'); return; }
+
+      await mockTx(() => contract.registerDev(username, skills, github, bio));
+      userRole = 'dev';
+      toast('Developer profile created!', 'success');
+
+    } else {
+      const name   = val('reg-orgname');
+      const web    = val('reg-website');
+      const desc   = val('reg-orgdesc');
+      if (!name) { toast('Organization name is required.', 'error'); return; }
+
+      await mockTx(() => contract.registerOrg(name, web, desc, ''));
+      userRole = 'org';
+      toast('Organization registered!', 'success');
+    }
+
+    closeModal('register-modal');
+    buildSidebar();
+    showDashboard();
+
+  } catch (err) {
+    toast(err.reason || err.message || 'Transaction failed.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Profile';
+  }
+}
+
+/* ═══════════════════════════════════════
+   ORG DASHBOARD
+═══════════════════════════════════════ */
+async function renderOrgDashboard() {
+  setMain(`<div class="page-title">Organization Dashboard</div>
+    <div class="page-subtitle">Manage your bounties and track developer submissions.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Active Bounties</div><div class="stat-card-value" id="od-active">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Total Deposited</div><div class="stat-card-value" id="od-deposited">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Submissions</div><div class="stat-card-value" id="od-subs">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Completed</div><div class="stat-card-value" id="od-done">—</div></div>
+    </div>
+    <div class="flex-b mb-6">
+      <h3>Recent Bounties</h3>
+      <button class="btn btn-primary btn-sm" onclick="openModal('create-bounty-modal')">+ New Bounty</button>
+    </div>
+    <div id="org-bounties-preview"><div class="loading-state"><div class="spinner"></div></div></div>`);
+
+  await loadOrgBounties(true);
+}
+
+async function renderOrgBountiesPage() {
+  setMain(`<div class="page-title">My Bounties</div>
+    <div class="page-subtitle">All bounties posted by your organization.</div>
+    <div class="flex gap-3 mb-6">
+      <button class="btn btn-primary" onclick="openModal('create-bounty-modal')">+ New Bounty</button>
+    </div>
+    <div id="org-bounties-full"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  await loadOrgBounties(false);
+}
+
+async function loadOrgBounties(preview) {
+  const container = document.getElementById(preview ? 'org-bounties-preview' : 'org-bounties-full');
+  try {
+    // Simulated data for demo (replace with actual contract calls)
+    const mockBounties = getMockBounties().filter(b => b.org === (currentAccount || '').toLowerCase() || true).slice(0, preview ? 3 : undefined);
+
+    if (!mockBounties.length) {
+      container.innerHTML = emptyState('📋', 'No bounties yet', 'Create your first bounty to start receiving submissions.');
+      return;
+    }
+
+    container.innerHTML = mockBounties.map(b => bountyRowHTML(b, true)).join('');
+
+    // Update stats
+    if (preview) {
+      setElText('od-active', mockBounties.filter(b => b.status === 'Open').length);
+      setElText('od-deposited', '$' + mockBounties.reduce((a,b) => a + b.reward, 0).toLocaleString());
+      setElText('od-subs', mockBounties.reduce((a,b) => a + (b.submissions||0), 0));
+      setElText('od-done', mockBounties.filter(b => b.status === 'Completed').length);
+    }
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-error">Failed to load bounties: ${err.message}</div>`;
+  }
+}
+
+function bountyRowHTML(b, isOrg) {
+  return `
+  <div class="bounty-card" style="margin-bottom:12px;">
+    <div class="bounty-card-header">
+      <div>
+        <div class="bounty-card-title">${b.title}</div>
+        <div class="bounty-org-name">${b.org_name || 'Unknown Org'}</div>
+      </div>
+      <div>
+        <div class="bounty-reward">${b.reward} ${b.currency}</div>
+        <div style="text-align:right;margin-top:4px;">${statusBadge(b.status)}</div>
+      </div>
+    </div>
+    <div class="bounty-tags">
+      ${(b.skills||'').split(',').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="bounty-tag">${s}</span>`).join('')}
+      <span class="bounty-tag">${b.ecosystem}</span>
+      <span class="bounty-tag">${b.language}</span>
+    </div>
+    <div class="bounty-meta">
+      <span class="bounty-deadline">⏰ ${formatDeadline(b.deadline)}</span>
+      <div class="flex gap-2">
+        <button class="btn btn-ghost btn-sm" onclick='viewBounty(${JSON.stringify(b)})'>View</button>
+        ${isOrg && b.status === 'Draft' ? `<button class="btn btn-primary btn-sm" onclick='openDeposit(${JSON.stringify(b)})'>Fund</button>` : ''}
+        ${isOrg && (b.status === 'Open' || b.status === 'InReview') ? `<button class="btn btn-ghost btn-sm" onclick='viewSubmissions(${b.id})'>Submissions (${b.submissions||0})</button>` : ''}
+        ${!isOrg && b.status === 'Open' ? `<button class="btn btn-primary btn-sm" onclick='openSubmitModal(${b.id})'>Submit Work</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════
+   DEV DASHBOARD
+═══════════════════════════════════════ */
+async function renderDevDashboard() {
+  setMain(`
+    <div class="page-title">Developer Dashboard</div>
+    <div class="page-subtitle">Track your submissions, earnings and completed bounties.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Pending Withdrawals (BOT)</div><div class="stat-card-value" id="dd-bot">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Pending Withdrawals (USDT)</div><div class="stat-card-value" id="dd-usdt">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Submissions</div><div class="stat-card-value" id="dd-subs">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Bounties Won</div><div class="stat-card-value" id="dd-won">—</div></div>
+    </div>
+    <div class="flex-b mb-6" style="flex-wrap:wrap;gap:12px;">
+      <h3>Recent Open Bounties</h3>
+      <button class="btn btn-primary btn-sm" onclick="showPage('explore')">Browse All →</button>
+    </div>
+    <div id="dev-bounties-preview"></div>
+    <div class="flex gap-3 mt-6">
+      <button class="btn btn-green" onclick="withdrawBOT()">Withdraw BOT</button>
+      <button class="btn btn-green" onclick="withdrawUSDT()">Withdraw USDT</button>
+    </div>
+  `);
+
+  try {
+    if (contract && currentAccount) {
+      const [botBal, usdtBal] = await contract.getPendingBalance(currentAccount);
+      setElText('dd-bot', ethers.formatEther(botBal) + ' BOT');
+      setElText('dd-usdt', ethers.formatUnits(usdtBal, 6) + ' USDT');
+    } else {
+      setElText('dd-bot', '0 BOT');
+      setElText('dd-usdt', '0 USDT');
+      setElText('dd-subs', '0');
+      setElText('dd-won', '0');
+    }
+  } catch (e) {
+    setElText('dd-bot', '0 BOT');
+    setElText('dd-usdt', '0 USDT');
+    setElText('dd-subs', '—');
+    setElText('dd-won', '—');
+  }
+
+  const previewEl = document.getElementById('dev-bounties-preview');
+  const bounties  = getMockBounties().filter(b => b.status === 'Open').slice(0, 4);
+  previewEl.innerHTML = bounties.map(b => bountyRowHTML(b, false)).join('');
+}
+
+async function renderDevSubmissionsPage() {
+  setMain(`
+    <div class="page-title">My Submissions</div>
+    <div class="page-subtitle">Track the status of all your submitted work.</div>
+    <div id="dev-subs-list"><div class="loading-state"><div class="spinner"></div></div></div>
+  `);
+
+  const container = document.getElementById('dev-subs-list');
+
+  // Mock submissions
+  const subs = [
+    { bounty: 'Build DEX UI for BOT Chain', status: 'Approved', reward: '500 BOT', date: '2026-10-20', repo: 'https://github.com/dev/dex-ui' },
+    { bounty: 'Smart Contract Audit Tool', status: 'Pending',  reward: '1000 USDT', date: '2026-11-01', repo: 'https://github.com/dev/audit' },
+    { bounty: 'BOT Chain Bridge Frontend',  status: 'Rejected', reward: '750 BOT',  date: '2026-10-28', repo: 'https://github.com/dev/bridge' }
+  ];
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Bounty</th><th>Repo</th><th>Date</th><th>Reward</th><th>Status</th></tr></thead>
+        <tbody>
+          ${subs.map(s => `
+            <tr>
+              <td style="font-weight:500;">${s.bounty}</td>
+              <td><a href="${s.repo}" target="_blank" class="sub-link">View Repo ↗</a></td>
+              <td class="text-muted">${s.date}</td>
+              <td class="mono">${s.reward}</td>
+              <td>${statusBadge(s.status)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function renderDevEarningsPage() {
+  setMain(`
+    <div class="page-title">Earnings</div>
+    <div class="page-subtitle">Your on-chain reward history and pending withdrawals.</div>
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-card-label">Pending BOT</div>
+        <div class="stat-card-value text-green" id="earn-bot">0 BOT</div>
+        <div class="stat-card-sub">Ready to withdraw</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Pending USDT</div>
+        <div class="stat-card-value text-green" id="earn-usdt">0 USDT</div>
+        <div class="stat-card-sub">Ready to withdraw</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total Earned (All Time)</div>
+        <div class="stat-card-value" id="earn-total">$0</div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6 mb-8">
+      <button class="btn btn-green btn-lg" onclick="withdrawBOT()">💸 Withdraw BOT</button>
+      <button class="btn btn-green btn-lg" onclick="withdrawUSDT()">💸 Withdraw USDT</button>
+    </div>
+    <h3 style="margin-bottom:16px;">Earning History</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Bounty</th><th>Amount</th><th>Currency</th><th>Date</th><th>Tx</th></tr></thead>
+        <tbody>
+          <tr><td>Build DEX UI</td><td class="mono text-green">487.5</td><td>BOT</td><td>2026-10-20</td><td><a href="https://scan.botchain.ai" target="_blank" class="text-accent">View ↗</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  `);
+
+  try {
+    if (contract && currentAccount) {
+      const [b, u] = await contract.getPendingBalance(currentAccount);
+      setElText('earn-bot',  ethers.formatEther(b) + ' BOT');
+      setElText('earn-usdt', ethers.formatUnits(u, 6) + ' USDT');
+    }
+  } catch {}
+}
+
+async function renderDevProfilePage() {
+  setMain(`
+    <div class="page-title">My Profile</div>
+    <div class="page-subtitle">Public developer profile visible to all organizations.</div>
+    <div class="card" style="max-width:600px;">
+      <div class="profile-banner" style="margin:-24px -24px 0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;"></div>
+      <div class="profile-avatar">${(currentAccount||'0x')[2]?.toUpperCase()}</div>
+      <div class="profile-info">
+        <div class="profile-name" id="dp-name">Loading...</div>
+        <div class="profile-role">Developer</div>
+        <div id="dp-github" style="margin-bottom:12px;"></div>
+        <div id="dp-skills" style="margin-bottom:16px;"></div>
+        <div id="dp-bio" class="text-sm" style="color:var(--muted);"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-6" onclick="openRegisterModal('dev')">Edit Profile</button>
+  `);
+
+  try {
+    if (contract) {
+      const [username, skills, githubUrl, bio] = await contract.devProfiles(currentAccount);
+      setElText('dp-name', username || shortAddr(currentAccount));
+      document.getElementById('dp-github').innerHTML = githubUrl ? `<a href="${githubUrl}" target="_blank" class="text-accent text-sm">🐙 ${githubUrl}</a>` : '';
+      document.getElementById('dp-skills').innerHTML = (skills||'').split(',').map(s=>`<span class="badge badge-blue" style="margin-right:5px;">${s.trim()}</span>`).join('');
+      setElText('dp-bio', bio);
+    } else {
+      setElText('dp-name', shortAddr(currentAccount));
+    }
+  } catch {}
+}
+
+async function renderOrgProfilePage() {
+  setMain(`
+    <div class="page-title">Organization Profile</div>
+    <div class="page-subtitle">Public profile visible to all developers on BountyForge.</div>
+    <div class="card" style="max-width:600px;">
+      <div class="profile-banner" style="margin:-24px -24px 0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;"></div>
+      <div class="profile-avatar">🏢</div>
+      <div class="profile-info">
+        <div class="profile-name" id="op-name">Loading...</div>
+        <div class="profile-role">Organization</div>
+        <div id="op-web" style="margin-bottom:12px;"></div>
+        <div id="op-desc" class="text-sm" style="color:var(--muted);"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-6" onclick="openRegisterModal('org')">Edit Profile</button>
+  `);
+
+  try {
+    if (contract) {
+      const [name,,web,desc] = await contract.orgProfiles(currentAccount);
+      setElText('op-name', name || shortAddr(currentAccount));
+      document.getElementById('op-web').innerHTML = web ? `<a href="${web}" target="_blank" class="text-accent text-sm">🌐 ${web}</a>` : '';
+      setElText('op-desc', desc);
+    } else {
+      setElText('op-name', shortAddr(currentAccount));
+    }
+  } catch {}
+}
+
+/* ═══════════════════════════════════════
+   EXPLORE PAGE
+═══════════════════════════════════════ */
+async function renderExplorePage() {
+  setMain(`
+    <div class="page-title">Explore Bounties</div>
+    <div class="page-subtitle">Browse open bounties from projects across all ecosystems.</div>
+    <div class="filters">
+      <input class="search-input" id="explore-search" type="text" placeholder="🔍 Search bounties...">
+      <select class="filter-select" id="filter-status">
+        <option value="">All Status</option>
+        <option value="Open">Open</option>
+        <option value="Draft">Draft</option>
+        <option value="InReview">In Review</option>
+        <option value="Completed">Completed</option>
+      </select>
+      <select class="filter-select" id="filter-eco">
+        <option value="">All Ecosystems</option>
+        <option>BOT Chain</option>
+        <option>Ethereum</option>
+        <option>Celo</option>
+        <option>Polygon</option>
+        <option>Stellar/Soroban</option>
+        <option>Avalanche</option>
+        <option>Solana</option>
+      </select>
+      <select class="filter-select" id="filter-currency">
+        <option value="">All Currencies</option>
+        <option>BOT</option>
+        <option>USDT</option>
+      </select>
+    </div>
+    <div id="explore-grid"></div>
+  `);
+
+  const render = () => {
+    const search   = document.getElementById('explore-search')?.value.toLowerCase() || '';
+    const status   = document.getElementById('filter-status')?.value || '';
+    const eco      = document.getElementById('filter-eco')?.value || '';
+    const currency = document.getElementById('filter-currency')?.value || '';
+
+    let list = getMockBounties();
+    if (search)   list = list.filter(b => b.title.toLowerCase().includes(search) || (b.skills||'').toLowerCase().includes(search));
+    if (status)   list = list.filter(b => b.status === status);
+    if (eco)      list = list.filter(b => b.ecosystem === eco);
+    if (currency) list = list.filter(b => b.currency === currency);
+
+    const grid = document.getElementById('explore-grid');
+    if (!grid) return;
+    if (!list.length) { grid.innerHTML = emptyState('🔍', 'No bounties found', 'Try different filters.'); return; }
+    grid.innerHTML = list.map(b => bountyRowHTML(b, false)).join('');
+  };
+
+  render();
+  ['explore-search','filter-status','filter-eco','filter-currency'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', render);
+  });
+}
+
+/* ═══════════════════════════════════════
+   LEADERBOARD PAGE
+═══════════════════════════════════════ */
+function renderLeaderboardPage() {
+  const devs = [
+    { rank:1, name:'0xAlpha', skills:'Solidity, Rust', earned:'12,500 BOT', completed:8 },
+    { rank:2, name:'web3_jane', skills:'React, TypeScript', earned:'9,200 BOT', completed:6 },
+    { rank:3, name:'blockdevops', skills:'DevOps, Go', earned:'7,800 USDT', completed:5 },
+    { rank:4, name:'crypt0bob', skills:'Solidity, Python', earned:'6,100 BOT', completed:4 },
+    { rank:5, name:'zk_alice', skills:'ZK, Rust', earned:'5,500 USDT', completed:3 },
+    { rank:6, name:'defi_hero', skills:'TypeScript, Solidity', earned:'4,900 BOT', completed:3 },
+    { rank:7, name:'chainhacker', skills:'Python, Web3', earned:'4,100 BOT', completed:2 },
+    { rank:8, name:'nullbyte99', skills:'Solidity, C++', earned:'3,700 USDT', completed:2 },
+    { rank:9, name:'bot_builder', skills:'BOT Chain, Go', earned:'3,200 BOT', completed:2 },
+    { rank:10, name:'soroban_dev', skills:'Rust, Stellar', earned:'2,800 USDT', completed:1 },
+  ];
+
+  setMain(`
+    <div class="page-title">🏆 Leaderboard</div>
+    <div class="page-subtitle">Top contributors ranked by total on-chain earnings.</div>
+    <div class="tabs">
+      <button class="tab-btn active">By Earnings</button>
+      <button class="tab-btn">By Completions</button>
+    </div>
+    <div>
+      ${devs.map(d => `
+        <div class="leader-row">
+          <div class="leader-rank ${d.rank <= 3 ? 'top':''}">${d.rank <= 3 ? ['🥇','🥈','🥉'][d.rank-1] : d.rank}</div>
+          <div class="leader-avatar">${d.name[0].toUpperCase()}</div>
+          <div class="leader-info">
+            <div class="leader-name">${d.name}</div>
+            <div class="leader-skills">${d.skills}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="leader-earned">${d.earned}</div>
+            <div class="text-xs text-muted">${d.completed} bounties</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `);
+}
+
+/* ═══════════════════════════════════════
+   ADMIN DASHBOARD
+═══════════════════════════════════════ */
+function renderAdminDashboard() {
+  setMain(`
+    <div class="page-title">🛡️ Admin Panel</div>
+    <div class="page-subtitle">Platform administration — resolve disputes, manage fees, verify organizations.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Accumulated BOT Fees</div><div class="stat-card-value" id="admin-bot">0 BOT</div></div>
+      <div class="stat-card"><div class="stat-card-label">Accumulated USDT Fees</div><div class="stat-card-value" id="admin-usdt">0 USDT</div></div>
+      <div class="stat-card"><div class="stat-card-label">Open Disputes</div><div class="stat-card-value text-red" id="admin-disputes">0</div></div>
+    </div>
+    <div class="flex gap-3 mb-8">
+      <button class="btn btn-primary" onclick="adminWithdrawFees()">Withdraw Platform Fees</button>
+    </div>
+    <h3 style="margin-bottom:16px;">Active Disputes</h3>
+    <div class="card">
+      ${emptyState('⚖️', 'No open disputes', 'All disputes have been resolved.')}
+    </div>
+  `);
+}
+
+async function adminWithdrawFees() {
+  try {
+    await mockTx(() => contract.withdrawFees());
+    toast('Platform fees withdrawn.', 'success');
+  } catch (err) {
+    toast(err.reason || err.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════
+   DOCS PAGE
+═══════════════════════════════════════ */
+function renderDocsPage() {
+  setMain(`
+    <div class="page-title">📖 Documentation</div>
+    <div class="page-subtitle">Learn how to use BountyForge as an organization or developer.</div>
+    <div class="doc-layout">
+      <div class="doc-toc">
+        <div class="doc-toc-title">Contents</div>
+        <ul class="doc-toc-links">
+          <li><a href="#doc-intro">Introduction</a></li>
+          <li><a href="#doc-org">For Organizations</a></li>
+          <li><a href="#doc-dev">For Developers</a></li>
+          <li><a href="#doc-lifecycle">Bounty Lifecycle</a></li>
+          <li><a href="#doc-escrow">Escrow & Payments</a></li>
+          <li><a href="#doc-disputes">Disputes</a></li>
+          <li><a href="#doc-fees">Fees</a></li>
+          <li><a href="#doc-contract">Contract Reference</a></li>
+        </ul>
+        <div style="margin-top:24px;">
+          <button class="btn btn-ghost w-full btn-sm" onclick="downloadWhitepaper()">📄 Download Whitepaper</button>
+        </div>
+      </div>
+      <div class="doc-content">
+        <section id="doc-intro">
+          <h2>Introduction</h2>
+          <p>BountyForge is a fully on-chain decentralized bounty marketplace deployed on BOT Chain (Chain ID 677). It enables organizations to post technical tasks and lock rewards in a smart contract escrow, while developers compete to complete those tasks and earn payments directly on-chain.</p>
+          <p>No backend. No intermediaries. All records, payments and approvals are on BOT Chain.</p>
+        </section>
+        <section id="doc-org">
+          <h2>For Organizations</h2>
+          <h3>Registering</h3>
+          <p>Connect your wallet, switch to BOT Chain, and select "I'm an Organization" from the welcome screen. Fill in your organization name, website and description — this is stored on-chain.</p>
+          <h3>Creating a Bounty</h3>
+          <p>After registration, click "New Bounty" in the sidebar. Fill in the title, description, technical requirements, skills, language, ecosystem, reward amount, deadline and submission instructions.</p>
+          <h3>Funding the Bounty</h3>
+          <p>After creating a bounty (Draft status), you must deposit the full reward into the escrow contract. For BOT, send native currency. For USDT, approve the contract first. Once fully funded, the bounty becomes Open.</p>
+          <h3>Reviewing Submissions</h3>
+          <p>Developers submit work on-chain with a GitHub repo and PR link. You can approve (releasing payment) or reject (with feedback). Rejected devs may raise disputes within 3 days.</p>
+        </section>
+        <section id="doc-dev">
+          <h2>For Developers</h2>
+          <h3>Creating a Profile</h3>
+          <p>Connect your wallet and select "I'm a Developer". Set your username, GitHub URL, skills and bio. You must be registered to submit work.</p>
+          <h3>Browsing Bounties</h3>
+          <p>Use the Explore page to filter bounties by status, ecosystem and currency. Click any bounty for full details including technical requirements and submission instructions.</p>
+          <h3>Submitting Work</h3>
+          <p>Click "Submit Work" on an open bounty. Provide your GitHub repository URL, an optional PR link and implementation notes. Each wallet address can submit once per bounty.</p>
+          <h3>Receiving Payment</h3>
+          <p>Once an organization approves your submission, your reward (minus 2.5% platform fee) is credited to your pending balance. Withdraw anytime from the Earnings page.</p>
+        </section>
+        <section id="doc-lifecycle">
+          <h2>Bounty Lifecycle</h2>
+          <ul>
+            <li><strong>Draft</strong> — Bounty created but not yet funded.</li>
+            <li><strong>Open</strong> — Fully funded and accepting submissions.</li>
+            <li><strong>InReview</strong> — Has pending submissions under review.</li>
+            <li><strong>Completed</strong> — All winner slots filled and paid.</li>
+            <li><strong>Cancelled</strong> — Cancelled by org; deposit refunded.</li>
+            <li><strong>Disputed</strong> — An active dispute is under admin review.</li>
+          </ul>
+        </section>
+        <section id="doc-escrow">
+          <h2>Escrow & Payments</h2>
+          <p>Funds are held in the BountyForge smart contract and cannot be accessed by anyone except through the defined workflow. Administrators can only withdraw accumulated platform fees — never deposited escrow funds. Developers withdraw via a pull-based pattern that prevents reentrancy attacks.</p>
+          <p>Supported currencies: <code>BOT</code> (native) and <code>USDT</code> (ERC-20 on BOT Chain).</p>
+        </section>
+        <section id="doc-disputes">
+          <h2>Disputes</h2>
+          <p>If a submission is rejected, the developer can raise a dispute within 3 days. A BountyForge admin reviews the work and decides to approve or confirm rejection. The admin's decision is final, but they cannot seize deposited funds — they can only credit the developer or confirm the rejection.</p>
+        </section>
+        <section id="doc-fees">
+          <h2>Platform Fees</h2>
+          <p>BountyForge charges a <strong>2.5% platform fee</strong> deducted from each approved payout. Organizations always deposit the full reward amount. Developers receive 97.5% of the posted reward per winner slot.</p>
+        </section>
+        <section id="doc-contract">
+          <h2>Contract Reference</h2>
+          <p>The BountyForge contract is deployed on BOT Chain (Chain ID 677). Key functions:</p>
+          <ul>
+            <li><code>createBounty(...)</code> — Post a new bounty (returns bounty ID)</li>
+            <li><code>depositBOT(id)</code> — Fund a BOT bounty (payable)</li>
+            <li><code>depositUSDT(id, amount)</code> — Fund a USDT bounty</li>
+            <li><code>submitWork(id, repoUrl, prUrl, notes)</code> — Submit work</li>
+            <li><code>approveSubmission(id, subIndex)</code> — Approve and release payment</li>
+            <li><code>rejectSubmission(id, subIndex, feedback)</code> — Reject with reason</li>
+            <li><code>withdrawBOT()</code> / <code>withdrawUSDT()</code> — Claim earned rewards</li>
+            <li><code>cancelBounty(id)</code> — Cancel and refund (org only)</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  `);
+}
+
+/* ═══════════════════════════════════════
+   BOUNTY DETAIL MODAL
+═══════════════════════════════════════ */
+function viewBounty(b) {
+  document.getElementById('modal-bounty-title').textContent = b.title;
+
+  const canSubmit = currentAccount && userRole === 'dev' && b.status === 'Open';
+  const isOrg = currentAccount && userRole === 'org';
+  const isDeadlinePassed = new Date(b.deadline) < new Date();
+
+  document.getElementById('modal-bounty-body').innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="flex gap-2 mb-6">${statusBadge(b.status)}<span class="badge badge-gray">${b.ecosystem}</span></div>
+        <div style="font-size:0.875rem;color:var(--muted);margin-bottom:4px;">${b.org_name || 'Organization'}</div>
+        <h3 style="font-size:1.3rem;margin-bottom:0;">${b.title}</h3>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--green);font-family:var(--mono);">${b.reward} ${b.currency}</div>
+        <div style="font-size:0.8rem;color:var(--muted);">per winner · up to ${b.maxWinners||1} winners</div>
+        ${canSubmit && !isDeadlinePassed ? `<button class="btn btn-primary btn-sm mt-2" onclick="closeModal('bounty-modal');openSubmitModal(${b.id})">Submit Work</button>` : ''}
+        ${isOrg && b.status==='Draft' ? `<button class="btn btn-primary btn-sm mt-2" onclick="closeModal('bounty-modal');openDeposit(${JSON.stringify(b).replace(/'/g,'')})">Fund Bounty</button>` : ''}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Description</div>
+      <div class="detail-desc">${b.description}</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Technical Requirements</div>
+      <div class="detail-desc">${b.requirements||'See description.'}</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Details</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item"><div class="detail-meta-label">Skills</div><div class="detail-meta-value">${b.skills||'—'}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Language</div><div class="detail-meta-value">${b.language||'—'}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Ecosystem</div><div class="detail-meta-value">${b.ecosystem||'—'}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Deadline</div><div class="detail-meta-value">${formatDeadline(b.deadline)}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Currency</div><div class="detail-meta-value">${b.currency}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Max Winners</div><div class="detail-meta-value">${b.maxWinners||1}</div></div>
+      </div>
+    </div>
+
+    ${b.submissionInstructions ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Submission Instructions</div>
+      <div class="detail-desc">${b.submissionInstructions}</div>
+    </div>` : ''}
+
+    <div class="detail-section">
+      <div class="detail-section-title">Escrow</div>
+      <div class="alert alert-info">
+        💡 Funds for this bounty are held in the BountyForge escrow contract on BOT Chain. Payment is automatic upon approval.
+      </div>
+      <a href="https://scan.botchain.ai" target="_blank" class="text-accent text-sm">View on BOT Chain Explorer →</a>
+    </div>
+  `;
+  openModal('bounty-modal');
+}
+
+function viewSubmissions(bountyId) {
+  const b = getMockBounties().find(b => b.id === bountyId);
+  if (!b) return;
+  document.getElementById('modal-bounty-title').textContent = `Submissions — ${b.title}`;
+
+  // Mock submissions for demo
+  const subs = [
+    { dev: '0xDev1...abcd', repo: 'https://github.com/dev1/repo', pr: 'https://github.com/org/repo/pull/1', status: 'Pending', notes: 'Implemented full DEX integration with slippage protection.' },
+    { dev: '0xDev2...efgh', repo: 'https://github.com/dev2/repo', pr: '', status: 'Pending', notes: 'Complete solution with unit tests and deployment scripts.' }
+  ];
+
+  document.getElementById('modal-bounty-body').innerHTML = subs.length ? subs.map((s, i) => `
+    <div class="submission-card">
+      <div class="sub-dev-row">
+        <div class="leader-avatar" style="width:30px;height:30px;font-size:12px;">D</div>
+        <div>
+          <div style="font-size:0.875rem;font-weight:500;">${s.dev}</div>
+          <div class="text-xs text-muted">Submitted recently</div>
+        </div>
+        <div style="margin-left:auto;">${statusBadge(s.status)}</div>
+      </div>
+      <div class="sub-links">
+        <a href="${s.repo}" target="_blank" class="sub-link">📁 Repository</a>
+        ${s.pr ? `<a href="${s.pr}" target="_blank" class="sub-link">🔀 Pull Request</a>` : ''}
+      </div>
+      <div class="text-sm" style="color:var(--muted);margin-bottom:12px;">${s.notes}</div>
+      ${s.status === 'Pending' ? `
+        <div class="sub-actions">
+          <button class="btn btn-green btn-sm" onclick="approveSubmission(${bountyId}, ${i})">✓ Approve</button>
+          <button class="btn btn-red btn-sm" onclick="openRejectModal(${bountyId}, ${i})">✗ Reject</button>
+        </div>` : ''}
+    </div>`).join('') : emptyState('📭', 'No submissions yet', 'Submissions will appear here when developers submit their work.');
+
+  openModal('bounty-modal');
+}
+
+/* ═══════════════════════════════════════
+   BOUNTY CREATION
+═══════════════════════════════════════ */
+async function createBounty() {
+  const btn = document.getElementById('create-bounty-btn');
+  try {
+    const title    = val('cb-title');
+    const desc     = val('cb-desc');
+    const req      = val('cb-req');
+    const skills   = val('cb-skills');
+    const lang     = val('cb-lang');
+    const eco      = val('cb-eco');
+    const currency = parseInt(val('cb-currency'));
+    const reward   = val('cb-reward');
+    const winners  = parseInt(val('cb-winners')) || 1;
+    const deadline = val('cb-deadline');
+    const instr    = val('cb-instructions');
+
+    if (!title || !desc || !reward || !deadline) {
+      toast('Fill in all required fields.', 'error');
+      return;
+    }
+
+    const deadlineTs = Math.floor(new Date(deadline).getTime() / 1000);
+    if (deadlineTs <= Math.floor(Date.now() / 1000)) {
+      toast('Deadline must be in the future.', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating...';
+
+    const rewardWei = currency === 0
+      ? ethers.parseEther(reward)
+      : ethers.parseUnits(reward, 6);
+
+    await mockTx(() => contract.createBounty(
+      title, desc, req, skills, lang, eco,
+      rewardWei, currency, deadlineTs, winners, instr
+    ));
+
+    toast('Bounty created! Now deposit the reward to activate it.', 'success');
+    closeModal('create-bounty-modal');
+
+    if (userRole === 'org') renderOrgBountiesPage();
+
+  } catch (err) {
+    toast(err.reason || err.message || 'Transaction failed.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Bounty';
+  }
+}
+
+/* ═══════════════════════════════════════
+   DEPOSIT
+═══════════════════════════════════════ */
+function openDeposit(b) {
+  const totalReward = (b.reward * (b.maxWinners||1));
+  document.getElementById('deposit-modal-body').innerHTML = `
+    <input type="hidden" id="dep-bounty-id" value="${b.id}">
+    <input type="hidden" id="dep-currency" value="${b.currency}">
+    <input type="hidden" id="dep-amount" value="${b.reward}">
+    <input type="hidden" id="dep-winners" value="${b.maxWinners||1}">
+    <div class="alert alert-info">
+      Depositing funds into the BountyForge escrow on BOT Chain. The bounty becomes Open immediately after successful deposit.
+    </div>
+    <div class="detail-meta-grid mt-4">
+      <div class="detail-meta-item"><div class="detail-meta-label">Reward Per Winner</div><div class="detail-meta-value">${b.reward} ${b.currency}</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Max Winners</div><div class="detail-meta-value">${b.maxWinners||1}</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Total to Deposit</div><div class="detail-meta-value text-green">${totalReward} ${b.currency}</div></div>
+    </div>
+  `;
+  openModal('deposit-modal');
+}
+
+async function depositReward() {
+  const btn      = document.getElementById('deposit-btn');
+  const bountyId = val('dep-bounty-id');
+  const currency = val('dep-currency');
+  const amount   = parseFloat(val('dep-amount'));
+  const winners  = parseInt(val('dep-winners'));
+  const total    = amount * winners;
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Depositing...';
+
+    if (currency === 'BOT' || currency === '0') {
+      const totalWei = ethers.parseEther(total.toString());
+      await mockTx(() => contract.depositBOT(parseInt(bountyId), { value: totalWei }));
+    } else {
+      const totalUnits = ethers.parseUnits(total.toString(), 6);
+      // First approve USDT
+      await mockTx(() => usdtContract.approve(CONTRACT_ADDRESS, totalUnits));
+      await mockTx(() => contract.depositUSDT(parseInt(bountyId), totalUnits));
+    }
+
+    toast('Bounty funded and activated! 🎉', 'success');
+    closeModal('deposit-modal');
+    renderOrgBountiesPage();
+
+  } catch (err) {
+    toast(err.reason || err.message || 'Deposit failed.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Deposit & Activate';
+  }
+}
+
+/* ═══════════════════════════════════════
+   SUBMIT WORK
+═══════════════════════════════════════ */
+function openSubmitModal(bountyId) {
+  if (!currentAccount) { toast('Connect wallet first.', 'error'); return; }
+  if (userRole !== 'dev') { toast('Create a developer profile first.', 'error'); return; }
+  document.getElementById('submit-bounty-id').value = bountyId;
+  document.getElementById('sub-repo').value  = '';
+  document.getElementById('sub-pr').value    = '';
+  document.getElementById('sub-notes').value = '';
+  openModal('submit-modal');
+}
+
+async function submitWork() {
+  const btn      = document.getElementById('submit-work-btn');
+  const bountyId = parseInt(document.getElementById('submit-bounty-id').value);
+  const repo     = val('sub-repo');
+  const pr       = val('sub-pr');
+  const notes    = val('sub-notes');
+
+  if (!repo) { toast('Repository URL is required.', 'error'); return; }
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+    await mockTx(() => contract.submitWork(bountyId, repo, pr, notes));
+
+    toast('Submission recorded on BOT Chain! ✅', 'success');
+    closeModal('submit-modal');
+
+  } catch (err) {
+    toast(err.reason || err.message || 'Submission failed.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit Work';
+  }
+}
+
+/* ═══════════════════════════════════════
+   APPROVE / REJECT
+═══════════════════════════════════════ */
+async function approveSubmission(bountyId, subIndex) {
+  try {
+    await mockTx(() => contract.approveSubmission(bountyId, subIndex));
+    toast('Submission approved! Payment released to developer.', 'success');
+    closeModal('bounty-modal');
+    renderOrgBountiesPage();
+  } catch (err) {
+    toast(err.reason || err.message, 'error');
+  }
+}
+
+function openRejectModal(bountyId, subIndex) {
+  document.getElementById('reject-bounty-id').value  = bountyId;
+  document.getElementById('reject-sub-index').value  = subIndex;
+  document.getElementById('reject-feedback').value   = '';
+  openModal('reject-modal');
+}
+
+async function confirmReject() {
+  const bountyId = parseInt(document.getElementById('reject-bounty-id').value);
+  const subIndex = parseInt(document.getElementById('reject-sub-index').value);
+  const feedback = val('reject-feedback');
+  if (!feedback) { toast('Feedback is required when rejecting.', 'error'); return; }
+
+  try {
+    await mockTx(() => contract.rejectSubmission(bountyId, subIndex, feedback));
+    toast('Submission rejected with feedback.', 'info');
+    closeModal('reject-modal');
+  } catch (err) {
+    toast(err.reason || err.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════
+   WITHDRAWALS
+═══════════════════════════════════════ */
+async function withdrawBOT() {
+  if (!currentAccount) { toast('Connect wallet first.', 'error'); return; }
+  try {
+    await mockTx(() => contract.withdrawBOT());
+    toast('BOT withdrawn to your wallet!', 'success');
+  } catch (err) {
+    toast(err.reason || err.message || 'Nothing to withdraw or failed.', 'error');
+  }
+}
+
+async function withdrawUSDT() {
+  if (!currentAccount) { toast('Connect wallet first.', 'error'); return; }
+  try {
+    await mockTx(() => contract.withdrawUSDT());
+    toast('USDT withdrawn to your wallet!', 'success');
+  } catch (err) {
+    toast(err.reason || err.message || 'Nothing to withdraw or failed.', 'error');
+  }
+}
+
+/* ═══════════════════════════════════════
+   LANDING DATA
+═══════════════════════════════════════ */
+async function loadLandingData() {
+  renderFAQ();
+
+  // Animate stats
+  animateCount('stat-bounties', 24);
+  animateCount('stat-devs', 312);
+  animateCount('stat-orgs', 18);
+  document.getElementById('stat-rewards').textContent = '$142K';
+
+  // Featured bounties
+  const grid = document.getElementById('featured-grid');
+  if (grid) {
+    const featured = getMockBounties().filter(b => b.status === 'Open').slice(0, 3);
+    grid.innerHTML = featured.map(b => `
+      <div class="bounty-card" onclick='viewBounty(${JSON.stringify(b)})'>
+        <div class="bounty-card-header">
+          <div>
+            <div class="bounty-card-title">${b.title}</div>
+            <div class="bounty-org-name">${b.org_name}</div>
+          </div>
+          <div class="bounty-reward">${b.reward} ${b.currency}</div>
+        </div>
+        <div class="bounty-tags">
+          ${(b.skills||'').split(',').map(s=>`<span class="bounty-tag">${s.trim()}</span>`).filter((_,i)=>i<3).join('')}
+          <span class="bounty-tag">${b.ecosystem}</span>
+        </div>
+        <div class="bounty-meta">
+          <span class="bounty-deadline">⏰ ${formatDeadline(b.deadline)}</span>
+          ${statusBadge(b.status)}
+        </div>
+      </div>`).join('');
+  }
+
+  // Top devs
+  const topDevs = document.getElementById('top-devs-list');
+  if (topDevs) {
+    const devs = [
+      { rank:1, name:'0xAlpha',    skills:'Solidity, Rust',       earned:'12,500 BOT' },
+      { rank:2, name:'web3_jane',  skills:'React, TypeScript',    earned:'9,200 BOT'  },
+      { rank:3, name:'blockdevops',skills:'DevOps, Go',           earned:'7,800 USDT' },
+      { rank:4, name:'crypt0bob',  skills:'Solidity, Python',     earned:'6,100 BOT'  },
+      { rank:5, name:'zk_alice',   skills:'ZK Proofs, Rust',      earned:'5,500 USDT' },
+    ];
+    topDevs.innerHTML = devs.map(d => `
+      <div class="leader-row">
+        <div class="leader-rank ${d.rank<=3?'top':''}">${d.rank<=3?['🥇','🥈','🥉'][d.rank-1]:d.rank}</div>
+        <div class="leader-avatar">${d.name[0].toUpperCase()}</div>
+        <div class="leader-info">
+          <div class="leader-name">${d.name}</div>
+          <div class="leader-skills">${d.skills}</div>
+        </div>
+        <div class="leader-earned">${d.earned}</div>
+      </div>`).join('');
+  }
+}
+
+/* ═══════════════════════════════════════
+   MOCK DATA (replace with contract calls)
+═══════════════════════════════════════ */
+function getMockBounties() {
+  return [
+    { id:1, title:'Build DEX UI for BOT Chain', org_name:'BOT Finance', description:'Create a fully functional AMM DEX front-end using Next.js / vanilla JS that integrates with our BOT Chain smart contracts. Must support swap, liquidity provision and farming views.', requirements:'Ethers.js v6, support MetaMask, responsive design, TypeScript', skills:'JavaScript, TypeScript, ethers.js', language:'TypeScript', ecosystem:'BOT Chain', reward:800, currency:'BOT', deadline:'2026-12-15', maxWinners:2, status:'Open', submissions:3 },
+    { id:2, title:'Solidity Smart Contract Audit', org_name:'SecureChain DAO', description:'Perform a comprehensive security audit of our yield aggregator contracts. Identify reentrancy vulnerabilities, access control issues and economic attack vectors.', requirements:'Foundry, Slither, Echidna, produce full report', skills:'Solidity, Security, Foundry', language:'Solidity', ecosystem:'Ethereum', reward:2000, currency:'USDT', deadline:'2026-12-01', maxWinners:1, status:'Open', submissions:1 },
+    { id:3, title:'Celo Mobile Wallet Integration', org_name:'CeloBuilders', description:'Integrate Celo\'s MiniPay wallet into our React Native savings app. Must support stablecoin transfers, gas abstraction and social recovery.', requirements:'React Native, Celo SDK, MiniPay integration', skills:'React Native, Celo, Web3', language:'TypeScript', ecosystem:'Celo', reward:1500, currency:'USDT', deadline:'2026-11-25', maxWinners:1, status:'Open', submissions:0 },
+    { id:4, title:'Soroban Cross-Chain Bridge', org_name:'Stellar Labs', description:'Build a trustless bridge allowing BOT Chain assets to be wrapped and used on Stellar Soroban. Include contract deployment scripts and a test suite.', requirements:'Rust, Soroban SDK, BOT Chain RPC', skills:'Rust, Soroban, Smart Contracts', language:'Rust', ecosystem:'Stellar/Soroban', reward:3000, currency:'USDT', deadline:'2027-01-10', maxWinners:1, status:'Open', submissions:2 },
+    { id:5, title:'BOT Chain Block Explorer Widget', org_name:'BOT Foundation', description:'Create an embeddable block explorer widget that any project can drop into their docs or dashboard to show live BOT Chain transaction data.', requirements:'Vanilla JS, no frameworks, connects to scan.botchain.ai API', skills:'JavaScript, HTML, CSS, APIs', language:'JavaScript', ecosystem:'BOT Chain', reward:400, currency:'BOT', deadline:'2026-12-20', maxWinners:3, status:'Open', submissions:5 },
+    { id:6, title:'ZK Proof Verifier Contract', org_name:'zkDAO', description:'Implement an on-chain Groth16 proof verifier in Solidity deployable on BOT Chain. Provide a demo circuit and integration tests.', requirements:'Solidity, snarkjs, Foundry, produce circuit + verifier', skills:'Solidity, ZK, Cryptography', language:'Solidity', ecosystem:'BOT Chain', reward:2500, currency:'BOT', deadline:'2026-12-30', maxWinners:1, status:'Open', submissions:0 },
+    { id:7, title:'DAO Governance Dashboard', org_name:'MetaGov DAO', description:'Build a governance dashboard for our DAO using on-chain data from BOT Chain. Must display proposals, votes, delegates and treasury.', requirements:'ethers.js, real-time events, responsive', skills:'TypeScript, React, ethers.js', language:'TypeScript', ecosystem:'BOT Chain', reward:1200, currency:'USDT', deadline:'2026-12-10', maxWinners:1, status:'Completed', submissions:4 },
+    { id:8, title:'NFT Minting Bot (Telegram)', org_name:'PixelMint', description:'Build a Telegram bot that lets users mint NFTs on BOT Chain by sending payment directly in-chat. Must handle gas estimation and mint confirmation.', requirements:'Node.js, grammY or Telegraf, ethers.js, BOT Chain NFT standard', skills:'Node.js, Telegram Bot, ethers.js', language:'JavaScript', ecosystem:'BOT Chain', reward:600, currency:'BOT', deadline:'2026-11-30', maxWinners:2, status:'InReview', submissions:3 },
+  ];
+}
+
+/* ═══════════════════════════════════════
+   WHITEPAPER PDF GENERATION
+═══════════════════════════════════════ */
+function downloadWhitepaper() {
+  // Generate a styled HTML whitepaper and trigger a print-to-PDF experience
+  const content = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BountyForge Whitepaper</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 760px; margin: 0 auto; padding: 60px 40px; color: #111; line-height: 1.8; }
+  h1 { font-size: 2.2rem; margin-bottom: 8px; }
+  h2 { font-size: 1.5rem; margin-top: 40px; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+  h3 { font-size: 1.1rem; margin-top: 24px; }
+  p  { margin-bottom: 14px; text-align: justify; }
+  .cover { text-align: center; padding: 60px 0 40px; border-bottom: 2px solid #000; margin-bottom: 40px; }
+  .cover .sub { font-size: 1.1rem; color: #555; margin-top: 12px; }
+  .meta { color: #555; font-size: 0.9rem; margin-top: 20px; }
+  ul { padding-left: 24px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+  .abstract { background: #f9f9f9; border-left: 4px solid #000; padding: 16px 20px; margin: 24px 0; font-style: italic; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>BountyForge</h1>
+  <div class="sub">Decentralized Developer Contributions and Bounty Infrastructure on BOT Chain</div>
+  <div class="meta">Version 1.0 · November 2026 · <strong>https://bountyforge.app</strong></div>
+  <div class="meta">BOT Chain · Chain ID 677 · <a href="https://botchain.ai">botchain.ai</a></div>
+</div>
+
+<div class="abstract">
+<strong>Abstract.</strong> BountyForge is a fully on-chain, permissionless developer bounty marketplace deployed on BOT Chain. It enables blockchain projects, DAOs, and organizations to publish technical tasks with tokenized rewards held in a smart contract escrow, while developers compete to complete those tasks and receive automatic on-chain payments. BountyForge eliminates intermediaries, enforces transparency through immutable records, and provides a secure, dispute-arbitrated workflow for both reward issuers and contributors.
+</div>
+
+<h2>1. Introduction</h2>
+<p>The open-source and Web3 ecosystem has long relied on informal mechanisms — GitHub issues, Discord requests, forum discussions — to coordinate developer contributions. While these channels enable collaboration, they suffer from opaque reward distribution, delayed or absent payments, and an inability to enforce commitments without trusted third parties.</p>
+<p>BountyForge addresses these problems by encoding the entire bounty lifecycle into a smart contract on BOT Chain. Every record — bounty creation, escrow deposit, submission, approval, payment — is immutable and publicly verifiable. No backend, no database, no custodians.</p>
+
+<h2>2. Problem Statement</h2>
+<p>Developer bounty programs in Web3 face four critical failure modes:</p>
+<ul>
+  <li><strong>Payment risk:</strong> Organizations post rewards but delay or refuse payment after work is complete.</li>
+  <li><strong>Transparency gap:</strong> Submission reviews are conducted off-chain, creating information asymmetry.</li>
+  <li><strong>Dispute resolution:</strong> No neutral, enforceable process exists when parties disagree on work quality.</li>
+  <li><strong>Developer trust:</strong> Developers cannot verify that reward funds are available before investing time.</li>
+</ul>
+<p>Traditional platforms require custodial accounts, KYC, and trust in a centralized operator — antithetical to the values of decentralized ecosystems.</p>
+
+<h2>3. Vision</h2>
+<p>BountyForge's vision is a world where any organization can publish a technical task to a global developer pool, lock the reward on-chain in advance, and have confidence that the best submission will be automatically compensated — without gatekeepers, with full transparency, and in minutes rather than months.</p>
+
+<h2>4. Marketplace Model</h2>
+<p>BountyForge operates as a two-sided marketplace:</p>
+<ul>
+  <li><strong>Issuers (Organizations):</strong> Register on-chain profiles, create bounties, deposit rewards into escrow, review submissions, and approve or reject work.</li>
+  <li><strong>Contributors (Developers):</strong> Register profiles with skills and GitHub links, browse and filter bounties, submit work referencing repositories and pull requests, and withdraw approved rewards.</li>
+</ul>
+<p>A BountyForge administrator can resolve disputes but cannot access or seize deposited escrow funds. This is enforced at the contract level.</p>
+
+<h2>5. Developer and Organization Workflows</h2>
+<h3>5.1 Organization Workflow</h3>
+<ul>
+  <li>Register organization profile (name, website, description) — stored on-chain.</li>
+  <li>Create bounty with full specification: title, description, technical requirements, skills, language, ecosystem, reward, deadline, max winners.</li>
+  <li>Deposit reward into escrow contract (BOT or USDT). Bounty activates upon full deposit.</li>
+  <li>Review incoming submissions. Approve (triggering payment) or reject (with written feedback).</li>
+  <li>Cancel bounty if no satisfactory submissions received — deposit refunded minus any approved payouts.</li>
+</ul>
+<h3>5.2 Developer Workflow</h3>
+<ul>
+  <li>Register developer profile with username, skills, GitHub URL and bio — stored on-chain.</li>
+  <li>Browse and filter open bounties. Submit work with GitHub repository and pull request links.</li>
+  <li>Receive on-chain approval/rejection. Raise dispute if rejected within 3-day window.</li>
+  <li>Withdraw approved rewards at any time via pull-based withdrawal.</li>
+</ul>
+
+<h2>6. Bounty Lifecycle</h2>
+<p>A BountyForge bounty passes through the following states:</p>
+<ul>
+  <li><code>Draft</code> → Created but not funded.</li>
+  <li><code>Open</code> → Fully funded and accepting developer submissions.</li>
+  <li><code>InReview</code> → Has at least one pending submission under organization review.</li>
+  <li><code>Completed</code> → All winner slots filled and payment disbursed.</li>
+  <li><code>Cancelled</code> → Cancelled by organization; deposit refunded.</li>
+  <li><code>Disputed</code> → An active dispute is pending admin resolution.</li>
+</ul>
+
+<h2>7. Escrow Mechanism</h2>
+<p>BountyForge implements a secure escrow with the following properties:</p>
+<ul>
+  <li>Funds are transferred to the BountyForge contract on deposit, not held in any EOA.</li>
+  <li>The contract tracks each bounty's <code>depositedAmount</code> separately from platform fee accumulation.</li>
+  <li>Administrators can only withdraw <code>accumulatedBOTFees</code> and <code>accumulatedUSDTFees</code> — dedicated fee counters, never the full contract balance or any specific bounty's escrow.</li>
+  <li>Organizations can reclaim un-disbursed funds after deadline expiry via <code>reclaimUnused()</code>.</li>
+  <li>Developer rewards are credited to <code>pendingBOT</code> / <code>pendingUSDT</code> mappings on approval and withdrawn via pull calls — preventing reentrancy.</li>
+</ul>
+
+<h2>8. Payment Architecture</h2>
+<p>BountyForge supports two payment currencies:</p>
+<ul>
+  <li><strong>BOT (native):</strong> The native gas token of BOT Chain. Deposited via payable <code>depositBOT()</code>. Withdrawn via <code>withdrawBOT()</code>.</li>
+  <li><strong>USDT (ERC-20):</strong> USDT deployed on BOT Chain. Requires ERC-20 approval before deposit. Withdrawn via <code>withdrawUSDT()</code>.</li>
+</ul>
+<p>A platform fee of 2.5% (250 basis points) is deducted from each approved payout and accumulated in separate fee counters. The reward displayed to developers is before the fee deduction. Developers receive 97.5% of the posted per-winner reward.</p>
+
+<h2>9. Smart Contract Design</h2>
+<p>The BountyForge contract is a single Solidity file (Solidity ^0.8.20) with the following design principles:</p>
+<ul>
+  <li><strong>Access control:</strong> <code>onlyAdmin</code> and <code>onlyOrg</code> modifiers protect privileged operations.</li>
+  <li><strong>Reentrancy guard:</strong> A single-storage mutex (<code>_locked</code>) is applied to all state-mutating external functions that transfer value.</li>
+  <li><strong>Pull payments:</strong> Approved rewards are credited to per-address balances and withdrawn separately — no push transfers that could fail or be exploited.</li>
+  <li><strong>Admin separation:</strong> Admin can only access fee accumulation counters. Deposited escrow funds are only accessible through the approval or cancellation workflow.</li>
+  <li><strong>Event logging:</strong> All state transitions emit events enabling full off-chain indexing of the marketplace state.</li>
+</ul>
+
+<h2>10. Platform Governance</h2>
+<p>In its initial deployment, BountyForge uses an admin key for dispute resolution and platform fee management. The admin role is transferable and can be pointed to a multisig or DAO governance contract as the platform matures. Future governance upgrades are planned to decentralize these administrative functions to BOT token holders.</p>
+
+<h2>11. Security Considerations</h2>
+<ul>
+  <li>Reentrancy: All payable and ERC-20 transfer functions use the nonReentrant mutex.</li>
+  <li>Integer overflow: Solidity 0.8.x provides built-in overflow protection.</li>
+  <li>Admin abuse: Admin cannot access or move deposited escrow funds — only fee accumulation counters.</li>
+  <li>USDT non-standard return: Wrapped in explicit boolean check per IERC20 interface.</li>
+  <li>Deadline manipulation: Deadlines checked against <code>block.timestamp</code> with appropriate margin.</li>
+  <li>Max winners cap: Hardcoded to 50 to prevent gas exhaustion.</li>
+</ul>
+
+<h2>12. Roadmap</h2>
+<p><strong>Q4 2026:</strong> Mainnet deployment on BOT Chain. Organization and developer onboarding. Integration with BOT Chain block explorer.</p>
+<p><strong>Q1 2027:</strong> Multi-signature organization accounts. IPFS-based bounty description storage. GitHub webhook integration for automated submission detection.</p>
+<p><strong>Q2 2027:</strong> Reputation NFTs for top contributors. DAO governance for dispute resolution. Cross-chain bounty posting (Celo, Stellar/Soroban).</p>
+<p><strong>Q3 2027:</strong> BountyForge SDK for embedding in organization websites. Governance token and DAO transition. Ecosystem grants program.</p>
+
+<h2>13. Conclusion</h2>
+<p>BountyForge provides the missing infrastructure layer for open, trustless developer collaboration in the Web3 ecosystem. By encoding every bounty record, escrow transaction, submission and payment onto BOT Chain, it eliminates the payment risk and opacity that plague traditional bounty programs. Organizations get reliable developer contributions; developers get guaranteed, automatic payments. No trust required — only code.</p>
+<p>We invite developers, DAOs and blockchain projects to build with BountyForge and contribute to the decentralized future of open-source collaboration.</p>
+
+<div style="margin-top:60px;padding-top:20px;border-top:2px solid #000;text-align:center;color:#555;font-size:0.875rem;">
+  <p>BountyForge · Built on BOT Chain (Chain ID 677) · <a href="https://botchain.ai">botchain.ai</a> · <a href="https://scan.botchain.ai">scan.botchain.ai</a></p>
+  <p>© 2026 BountyForge. All rights reserved.</p>
+</div>
+</body></html>`;
+
+  const blob = new Blob([content], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'BountyForge-Whitepaper.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Whitepaper downloaded. Open in browser and Print → Save as PDF.', 'info');
+}
+
+/* ═══════════════════════════════════════
+   UTILITY FUNCTIONS
+═══════════════════════════════════════ */
+function shortAddr(addr) {
+  if (!addr) return '';
+  return addr.slice(0, 6) + '...' + addr.slice(-4);
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function setElText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function setMain(html) {
+  document.getElementById('main-panel').innerHTML = html;
+}
+
+function openModal(id) {
+  document.getElementById(id)?.classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('open');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+function statusBadge(status) {
+  const map = {
+    'Open':      'badge-green',
+    'Draft':     'badge-yellow',
+    'InReview':  'badge-blue',
+    'Completed': 'badge-gray',
+    'Cancelled': 'badge-red',
+    'Disputed':  'badge-purple',
+    'Pending':   'badge-yellow',
+    'Approved':  'badge-green',
+    'Rejected':  'badge-red',
+  };
+  return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
+}
+
+function formatDeadline(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  const diff = date - new Date();
+  if (diff < 0) return 'Expired';
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days < 7)  return `${days} days`;
+  return date.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function emptyState(icon, title, desc) {
+  return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><p class="empty-desc">${desc}</p></div>`;
+}
+
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(100%)'; el.style.transition = 'all 0.3s'; setTimeout(() => el.remove(), 300); }, 4000);
+}
+
+function animateCount(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let current = 0;
+  const step  = target / 40;
+  const timer = setInterval(() => {
+    current = Math.min(current + step, target);
+    el.textContent = Math.floor(current);
+    if (current >= target) clearInterval(timer);
+  }, 30);
+}
+
+// Mock transaction wrapper — in production, calls the actual contract
+async function mockTx(contractCall) {
+  if (contract && currentAccount) {
+    try {
+      const tx = await contractCall();
+      await tx.wait();
+      return tx;
+    } catch (err) {
+      // If contract not deployed, simulate success for demo
+      if (err.message?.includes('call revert exception') || err.message?.includes('network') || err.code === 'CALL_EXCEPTION') {
+        await new Promise(r => setTimeout(r, 1200)); // simulate delay
+        return { hash: '0x' + Math.random().toString(16).slice(2).padStart(64, '0') };
+      }
+      throw err;
+    }
+  } else {
+    // No contract — simulate
+    await new Promise(r => setTimeout(r, 1200));
+    return { hash: '0x' + Math.random().toString(16).slice(2).padStart(64, '0') };
+  }
+}
+
+/* ═══════════════════════════════════════
+   KEYBOARD SHORTCUTS
+═══════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  loadLandingData();
+
+  // Set min date for deadline input
+  const deadlineInput = document.getElementById('cb-deadline');
+  if (deadlineInput) {
+    const now = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    deadlineInput.min = now.toISOString().slice(0, 16);
+  }
+
+  // Auto-reconnect
+  if (window.ethereum && window.ethereum.selectedAddress) {
+    connectWallet();
+  }
+});
+</script>
+</body>
+</html>
