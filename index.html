@@ -1418,71 +1418,84 @@ footer {
 <!-- ══════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════ -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
 <script>
 /* ═══════════════════════════════════════
-   CONSTANTS
+   CONSTANTS — BOT Chain mainnet
 ═══════════════════════════════════════ */
 const BOT_CHAIN_ID     = 677;
-const BOT_CHAIN_HEX    = '0x2A5';
-const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001'; // Deploy and replace
-const USDT_ADDRESS     = '0x0000000000000000000000000000000000000002'; // Deploy and replace
+const BOT_CHAIN_HEX    = '0x2a5';
+const RPC_URL          = 'https://rpc.botchain.ai';
+const EXPLORER         = 'https://scan.botchain.ai';
+const CONTRACT_ADDRESS = '0xA84Ce0F254b92C189B8E4AcE4ED4F85521b8bB78';
+const FEE_BPS          = 250n;
+const DISPUTE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+// Deployed contract only accepts submissions while Open. If you redeploy with the fix, use ['Open','InReview'].
+const SUBMIT_STATUSES  = ['Open'];
 
-// ABI (key functions only — matches BountyForge.sol)
 const CONTRACT_ABI = [
-  "function registerOrg(string,string,string,string) external",
-  "function registerDev(string,string,string,string) external",
-  "function createBounty(string,string,string,string,string,string,uint256,uint8,uint256,uint256,string) external returns (uint256)",
-  "function depositBOT(uint256) external payable",
-  "function depositUSDT(uint256,uint256) external",
-  "function editBounty(uint256,string,string,string,string,string,string,uint256,string) external",
-  "function submitWork(uint256,string,string,string) external",
-  "function approveSubmission(uint256,uint256) external",
-  "function rejectSubmission(uint256,uint256,string) external",
-  "function raiseDispute(uint256,uint256) external",
-  "function withdrawBOT() external",
-  "function withdrawUSDT() external",
-  "function cancelBounty(uint256) external",
-  "function reclaimUnused(uint256) external",
-  "function getBounty(uint256) external view returns (tuple(uint256,address,string,string,string,string,string,string,uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint8,string))",
-  "function getSubmissions(uint256) external view returns (tuple(uint256,address,string,string,string,uint256,uint8,string)[])",
-  "function getAllBountyIds() external view returns (uint256[])",
-  "function getOrgBounties(address) external view returns (uint256[])",
-  "function getDevSubmittedBounties(address) external view returns (uint256[])",
-  "function bountyCount() external view returns (uint256)",
-  "function getPendingBalance(address) external view returns (uint256,uint256)",
-  "function orgProfiles(address) external view returns (string,string,string,string,bool,uint256,uint256)",
-  "function devProfiles(address) external view returns (string,string,string,string,uint256,uint256,bool)",
-  "function hasSubmitted(uint256,address) external view returns (bool)",
-  "event BountyCreated(uint256 indexed,address indexed,string,uint8,uint256)",
-  "event SubmissionApproved(uint256 indexed,uint256,address indexed,uint256)",
-  "event BountyFunded(uint256 indexed,uint256,uint8)"
+  "function admin() view returns (address)",
+  "function usdtToken() view returns (address)",
+  "function accumulatedBOTFees() view returns (uint256)",
+  "function accumulatedUSDTFees() view returns (uint256)",
+  "function registerOrg(string name,string website,string description,string logoIpfs)",
+  "function registerDev(string username,string skills,string githubUrl,string bio)",
+  "function createBounty((string title,string description,string requirements,string skills,string language,string ecosystem,string submissionInstructions,uint256 rewardPerWinner,uint8 currency,uint256 deadline,uint256 maxWinners) p) returns (uint256)",
+  "function editBounty(uint256 id,(string title,string description,string requirements,string skills,string language,string ecosystem,string submissionInstructions,uint256 deadline) p)",
+  "function depositBOT(uint256 id) payable",
+  "function depositUSDT(uint256 id,uint256 amount)",
+  "function submitWork(uint256 id,string repoUrl,string prUrl,string notes)",
+  "function approveSubmission(uint256 id,uint256 subIndex)",
+  "function rejectSubmission(uint256 id,uint256 subIndex,string feedback)",
+  "function raiseDispute(uint256 id,uint256 subIndex)",
+  "function resolveDispute(uint256 id,uint256 subIndex,bool approve,string resolution)",
+  "function withdrawBOT()",
+  "function withdrawUSDT()",
+  "function cancelBounty(uint256 id)",
+  "function reclaimUnused(uint256 id)",
+  "function withdrawFees()",
+  "function getBounty(uint256 id) view returns ((uint256 id,address org,string title,string description,string requirements,string skills,string language,string ecosystem,uint256 rewardPerWinner,uint256 totalReward,uint256 depositedAmount,uint8 currency,uint256 deadline,uint256 maxWinners,uint256 approvedCount,uint8 status,string submissionInstructions))",
+  "function getSubmissions(uint256 id) view returns ((uint256 bountyId,address developer,string repoUrl,string prUrl,string notes,uint256 submittedAt,uint8 status,string feedback)[])",
+  "function getAllBountyIds() view returns (uint256[])",
+  "function getDevSubmittedBounties(address dev) view returns (uint256[])",
+  "function getPendingBalance(address user) view returns (uint256 botBalance,uint256 usdtBalance)",
+  "function orgProfiles(address) view returns (string name,string website,string description,string logoIpfs,bool verified,uint256 totalPosted,uint256 totalPaid)",
+  "function devProfiles(address) view returns (string username,string skills,string githubUrl,string bio,uint256 totalEarned,uint256 completedBounties,bool registered)",
+  "function hasSubmitted(uint256,address) view returns (bool)",
+  "event BountyCreated(uint256 indexed id,address indexed org,string title,uint8 currency,uint256 rewardPerWinner)"
 ];
+const ERC20_ABI = [
+  "function approve(address spender,uint256 amount) returns (bool)",
+  "function allowance(address owner,address spender) view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
+const STATUS     = ['Draft','Open','InReview','Completed','Cancelled','Disputed'];
+const SUB_STATUS = ['Pending','Approved','Rejected','Disputed'];
 
-const USDT_ABI = [
-  "function approve(address,uint256) external returns (bool)",
-  "function allowance(address,address) external view returns (uint256)",
-  "function balanceOf(address) external view returns (uint256)"
-];
+const readProvider = new ethers.JsonRpcProvider(RPC_URL, BOT_CHAIN_ID, { staticNetwork: ethers.Network.from(BOT_CHAIN_ID) });
+const bfRead       = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, readProvider);
+const BF_IFACE     = new ethers.Interface(CONTRACT_ABI);
+const ERC20_IFACE  = new ethers.Interface(ERC20_ABI);
 
 /* ═══════════════════════════════════════
    STATE
 ═══════════════════════════════════════ */
-let provider, signer, contract, usdtContract;
-let currentAccount  = null;
-let userRole        = null; // 'dev' | 'org' | 'admin'
-let currentPage     = 'landing';
-let cachedBounties  = [];
-let userOrgProfile  = null;
-let userDevProfile  = null;
-
-const ADMIN_ADDRESSES = [
-  // Add admin addresses here
-  '0x0000000000000000000000000000000000000000'
-];
+let currentAccount = null;
+let userRole       = null; // 'dev' | 'org' | 'admin' | null
+let currentPage    = 'landing';
+let adminAddress   = null;
+let usdtAddress    = null;
+let usdtDecimals   = 6;
+let chainReady     = null;
+let bountyCache    = null;
+let bountyById     = {};
+let devCache       = {};
+let listenersAttached = false;
+let txBusy         = false;
 
 /* ═══════════════════════════════════════
-   LANDING CONTENT
+   UNCHANGED FROM ORIGINAL: FAQ, sidebar, new-user, docs, whitepaper
 ═══════════════════════════════════════ */
 const FAQ_DATA = [
   {
@@ -1532,187 +1545,6 @@ function toggleFAQ(i) {
   el.classList.toggle('open');
 }
 
-/* ═══════════════════════════════════════
-   WALLET CONNECTION
-═══════════════════════════════════════ */
-async function connectWallet() {
-  if (!window.ethereum) {
-    toast('No wallet detected. Install MetaMask or a compatible wallet.', 'error');
-    return;
-  }
-
-  try {
-    document.getElementById('connect-btn').innerHTML = '<span class="spinner"></span>';
-
-    provider = new ethers.BrowserProvider(window.ethereum);
-    const accounts = await provider.send('eth_requestAccounts', []);
-
-    if (!accounts.length) {
-      toast('No accounts found.', 'error');
-      return;
-    }
-
-    signer         = await provider.getSigner();
-    currentAccount = await signer.getAddress();
-
-    // Check chain
-    const network = await provider.getNetwork();
-    if (Number(network.chainId) !== BOT_CHAIN_ID) {
-      document.getElementById('connect-btn').textContent = 'Connect Wallet';
-      openModal('wrong-chain-modal');
-      return;
-    }
-
-    // Init contracts
-    contract     = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, signer);
-
-    // Listen for account/chain changes
-    window.ethereum.on('accountsChanged', onAccountChanged);
-    window.ethereum.on('chainChanged',    () => window.location.reload());
-
-    await onWalletConnected();
-
-  } catch (err) {
-    console.error(err);
-    toast(err.message || 'Connection failed.', 'error');
-    document.getElementById('connect-btn').textContent = 'Connect Wallet';
-  }
-}
-
-async function onAccountChanged(accounts) {
-  if (!accounts.length) {
-    disconnectWallet();
-    return;
-  }
-  currentAccount = accounts[0];
-  signer         = await provider.getSigner();
-  if (contract)  contract     = contract.connect(signer);
-  if (usdtContract) usdtContract = usdtContract.connect(signer);
-  await onWalletConnected();
-}
-
-function disconnectWallet() {
-  currentAccount = null;
-  signer         = null;
-  contract       = null;
-  userRole       = null;
-  document.getElementById('nav-wallet').style.display   = 'none';
-  document.getElementById('connect-btn').style.display  = 'inline-flex';
-  document.getElementById('connect-btn').textContent    = 'Connect Wallet';
-  showLanding();
-}
-
-async function onWalletConnected() {
-  // Update nav
-  document.getElementById('nav-wallet').style.display  = 'flex';
-  document.getElementById('connect-btn').style.display = 'none';
-  document.getElementById('nav-address').textContent   = shortAddr(currentAccount);
-
-  // Detect role
-  if (ADMIN_ADDRESSES.includes(currentAccount.toLowerCase())) {
-    userRole = 'admin';
-  } else {
-    // Check on-chain profiles
-    try {
-      const [orgName]  = await contract.orgProfiles(currentAccount);
-      const [,,,,,,devReg] = await contract.devProfiles(currentAccount);
-
-      if (orgName && orgName.length > 0) {
-        userOrgProfile = orgName;
-        userRole = 'org';
-      } else if (devReg) {
-        userDevProfile = true;
-        userRole = 'dev';
-      } else {
-        userRole = null; // new user
-      }
-    } catch (e) {
-      // Contract not deployed or mock mode
-      userRole = null;
-    }
-  }
-
-  toast(`Wallet connected: ${shortAddr(currentAccount)}`, 'success');
-  showDashboard();
-}
-
-async function switchToBOTChain() {
-  try {
-    await window.ethereum.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: BOT_CHAIN_HEX }]
-    });
-    closeModal('wrong-chain-modal');
-    await onWalletConnected();
-  } catch (err) {
-    if (err.code === 4902) {
-      try {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: BOT_CHAIN_HEX,
-            chainName: 'BOT Chain',
-            nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 },
-            rpcUrls: ['https://rpc.botchain.ai'],
-            blockExplorerUrls: ['https://scan.botchain.ai']
-          }]
-        });
-        closeModal('wrong-chain-modal');
-        await onWalletConnected();
-      } catch (addErr) {
-        toast('Could not add BOT Chain. Add it manually in your wallet.', 'error');
-      }
-    } else {
-      toast('Failed to switch chain.', 'error');
-    }
-  }
-}
-
-/* ═══════════════════════════════════════
-   PAGE ROUTING
-═══════════════════════════════════════ */
-function showLanding() {
-  document.getElementById('landing').style.display   = 'block';
-  document.getElementById('app-shell').style.display = 'none';
-  currentPage = 'landing';
-  loadLandingData();
-}
-
-function showDashboard() {
-  document.getElementById('landing').style.display   = 'none';
-  document.getElementById('app-shell').style.display = 'block';
-  buildSidebar();
-  if (userRole === 'org')   renderOrgDashboard();
-  else if (userRole === 'dev') renderDevDashboard();
-  else if (userRole === 'admin') renderAdminDashboard();
-  else renderNewUserPage();
-}
-
-function showPage(page) {
-  document.getElementById('landing').style.display   = 'none';
-  document.getElementById('app-shell').style.display = 'block';
-  buildSidebar();
-  currentPage = page;
-  switch (page) {
-    case 'explore':     renderExplorePage(); break;
-    case 'leaderboard': renderLeaderboardPage(); break;
-    case 'docs':        renderDocsPage(); break;
-    case 'org-dash':    renderOrgDashboard(); break;
-    case 'dev-dash':    renderDevDashboard(); break;
-    case 'org-bounties':renderOrgBountiesPage(); break;
-    case 'org-profile': renderOrgProfilePage(); break;
-    case 'dev-profile': renderDevProfilePage(); break;
-    case 'dev-submissions': renderDevSubmissionsPage(); break;
-    case 'dev-earnings': renderDevEarningsPage(); break;
-    case 'admin-dash':  renderAdminDashboard(); break;
-    default: renderExplorePage();
-  }
-}
-
-/* ═══════════════════════════════════════
-   SIDEBAR
-═══════════════════════════════════════ */
 function buildSidebar() {
   const sb = document.getElementById('sidebar');
   if (!currentAccount) {
@@ -1776,9 +1608,6 @@ function roleLabel() {
   return 'New User';
 }
 
-/* ═══════════════════════════════════════
-   NEW USER PAGE
-═══════════════════════════════════════ */
 function renderNewUserPage() {
   setMain(`
     <div class="connect-prompt">
@@ -1841,458 +1670,6 @@ function openRegisterModal(type) {
   openModal('register-modal');
 }
 
-async function submitRegistration() {
-  const body = document.getElementById('register-modal-body');
-  const type = body.dataset.type;
-  const btn  = document.getElementById('register-submit-btn');
-
-  try {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Saving...';
-
-    if (type === 'dev') {
-      const username = val('reg-username');
-      const github   = val('reg-github');
-      const skills   = val('reg-skills');
-      const bio      = val('reg-bio');
-      if (!username) { toast('Username is required.', 'error'); return; }
-
-      await mockTx(() => contract.registerDev(username, skills, github, bio));
-      userRole = 'dev';
-      toast('Developer profile created!', 'success');
-
-    } else {
-      const name   = val('reg-orgname');
-      const web    = val('reg-website');
-      const desc   = val('reg-orgdesc');
-      if (!name) { toast('Organization name is required.', 'error'); return; }
-
-      await mockTx(() => contract.registerOrg(name, web, desc, ''));
-      userRole = 'org';
-      toast('Organization registered!', 'success');
-    }
-
-    closeModal('register-modal');
-    buildSidebar();
-    showDashboard();
-
-  } catch (err) {
-    toast(err.reason || err.message || 'Transaction failed.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save Profile';
-  }
-}
-
-/* ═══════════════════════════════════════
-   ORG DASHBOARD
-═══════════════════════════════════════ */
-async function renderOrgDashboard() {
-  setMain(`<div class="page-title">Organization Dashboard</div>
-    <div class="page-subtitle">Manage your bounties and track developer submissions.</div>
-    <div class="stat-cards">
-      <div class="stat-card"><div class="stat-card-label">Active Bounties</div><div class="stat-card-value" id="od-active">—</div></div>
-      <div class="stat-card"><div class="stat-card-label">Total Deposited</div><div class="stat-card-value" id="od-deposited">—</div></div>
-      <div class="stat-card"><div class="stat-card-label">Submissions</div><div class="stat-card-value" id="od-subs">—</div></div>
-      <div class="stat-card"><div class="stat-card-label">Completed</div><div class="stat-card-value" id="od-done">—</div></div>
-    </div>
-    <div class="flex-b mb-6">
-      <h3>Recent Bounties</h3>
-      <button class="btn btn-primary btn-sm" onclick="openModal('create-bounty-modal')">+ New Bounty</button>
-    </div>
-    <div id="org-bounties-preview"><div class="loading-state"><div class="spinner"></div></div></div>`);
-
-  await loadOrgBounties(true);
-}
-
-async function renderOrgBountiesPage() {
-  setMain(`<div class="page-title">My Bounties</div>
-    <div class="page-subtitle">All bounties posted by your organization.</div>
-    <div class="flex gap-3 mb-6">
-      <button class="btn btn-primary" onclick="openModal('create-bounty-modal')">+ New Bounty</button>
-    </div>
-    <div id="org-bounties-full"><div class="loading-state"><div class="spinner"></div></div></div>`);
-  await loadOrgBounties(false);
-}
-
-async function loadOrgBounties(preview) {
-  const container = document.getElementById(preview ? 'org-bounties-preview' : 'org-bounties-full');
-  try {
-    // Simulated data for demo (replace with actual contract calls)
-    const mockBounties = getMockBounties().filter(b => b.org === (currentAccount || '').toLowerCase() || true).slice(0, preview ? 3 : undefined);
-
-    if (!mockBounties.length) {
-      container.innerHTML = emptyState('📋', 'No bounties yet', 'Create your first bounty to start receiving submissions.');
-      return;
-    }
-
-    container.innerHTML = mockBounties.map(b => bountyRowHTML(b, true)).join('');
-
-    // Update stats
-    if (preview) {
-      setElText('od-active', mockBounties.filter(b => b.status === 'Open').length);
-      setElText('od-deposited', '$' + mockBounties.reduce((a,b) => a + b.reward, 0).toLocaleString());
-      setElText('od-subs', mockBounties.reduce((a,b) => a + (b.submissions||0), 0));
-      setElText('od-done', mockBounties.filter(b => b.status === 'Completed').length);
-    }
-  } catch (err) {
-    container.innerHTML = `<div class="alert alert-error">Failed to load bounties: ${err.message}</div>`;
-  }
-}
-
-function bountyRowHTML(b, isOrg) {
-  return `
-  <div class="bounty-card" style="margin-bottom:12px;">
-    <div class="bounty-card-header">
-      <div>
-        <div class="bounty-card-title">${b.title}</div>
-        <div class="bounty-org-name">${b.org_name || 'Unknown Org'}</div>
-      </div>
-      <div>
-        <div class="bounty-reward">${b.reward} ${b.currency}</div>
-        <div style="text-align:right;margin-top:4px;">${statusBadge(b.status)}</div>
-      </div>
-    </div>
-    <div class="bounty-tags">
-      ${(b.skills||'').split(',').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="bounty-tag">${s}</span>`).join('')}
-      <span class="bounty-tag">${b.ecosystem}</span>
-      <span class="bounty-tag">${b.language}</span>
-    </div>
-    <div class="bounty-meta">
-      <span class="bounty-deadline">⏰ ${formatDeadline(b.deadline)}</span>
-      <div class="flex gap-2">
-        <button class="btn btn-ghost btn-sm" onclick='viewBounty(${JSON.stringify(b)})'>View</button>
-        ${isOrg && b.status === 'Draft' ? `<button class="btn btn-primary btn-sm" onclick='openDeposit(${JSON.stringify(b)})'>Fund</button>` : ''}
-        ${isOrg && (b.status === 'Open' || b.status === 'InReview') ? `<button class="btn btn-ghost btn-sm" onclick='viewSubmissions(${b.id})'>Submissions (${b.submissions||0})</button>` : ''}
-        ${!isOrg && b.status === 'Open' ? `<button class="btn btn-primary btn-sm" onclick='openSubmitModal(${b.id})'>Submit Work</button>` : ''}
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ═══════════════════════════════════════
-   DEV DASHBOARD
-═══════════════════════════════════════ */
-async function renderDevDashboard() {
-  setMain(`
-    <div class="page-title">Developer Dashboard</div>
-    <div class="page-subtitle">Track your submissions, earnings and completed bounties.</div>
-    <div class="stat-cards">
-      <div class="stat-card"><div class="stat-card-label">Pending Withdrawals (BOT)</div><div class="stat-card-value" id="dd-bot">—</div></div>
-      <div class="stat-card"><div class="stat-card-label">Pending Withdrawals (USDT)</div><div class="stat-card-value" id="dd-usdt">—</div></div>
-      <div class="stat-card"><div class="stat-card-label">Submissions</div><div class="stat-card-value" id="dd-subs">—</div></div>
-      <div class="stat-card"><div class="stat-card-label">Bounties Won</div><div class="stat-card-value" id="dd-won">—</div></div>
-    </div>
-    <div class="flex-b mb-6" style="flex-wrap:wrap;gap:12px;">
-      <h3>Recent Open Bounties</h3>
-      <button class="btn btn-primary btn-sm" onclick="showPage('explore')">Browse All →</button>
-    </div>
-    <div id="dev-bounties-preview"></div>
-    <div class="flex gap-3 mt-6">
-      <button class="btn btn-green" onclick="withdrawBOT()">Withdraw BOT</button>
-      <button class="btn btn-green" onclick="withdrawUSDT()">Withdraw USDT</button>
-    </div>
-  `);
-
-  try {
-    if (contract && currentAccount) {
-      const [botBal, usdtBal] = await contract.getPendingBalance(currentAccount);
-      setElText('dd-bot', ethers.formatEther(botBal) + ' BOT');
-      setElText('dd-usdt', ethers.formatUnits(usdtBal, 6) + ' USDT');
-    } else {
-      setElText('dd-bot', '0 BOT');
-      setElText('dd-usdt', '0 USDT');
-      setElText('dd-subs', '0');
-      setElText('dd-won', '0');
-    }
-  } catch (e) {
-    setElText('dd-bot', '0 BOT');
-    setElText('dd-usdt', '0 USDT');
-    setElText('dd-subs', '—');
-    setElText('dd-won', '—');
-  }
-
-  const previewEl = document.getElementById('dev-bounties-preview');
-  const bounties  = getMockBounties().filter(b => b.status === 'Open').slice(0, 4);
-  previewEl.innerHTML = bounties.map(b => bountyRowHTML(b, false)).join('');
-}
-
-async function renderDevSubmissionsPage() {
-  setMain(`
-    <div class="page-title">My Submissions</div>
-    <div class="page-subtitle">Track the status of all your submitted work.</div>
-    <div id="dev-subs-list"><div class="loading-state"><div class="spinner"></div></div></div>
-  `);
-
-  const container = document.getElementById('dev-subs-list');
-
-  // Mock submissions
-  const subs = [
-    { bounty: 'Build DEX UI for BOT Chain', status: 'Approved', reward: '500 BOT', date: '2026-10-20', repo: 'https://github.com/dev/dex-ui' },
-    { bounty: 'Smart Contract Audit Tool', status: 'Pending',  reward: '1000 USDT', date: '2026-11-01', repo: 'https://github.com/dev/audit' },
-    { bounty: 'BOT Chain Bridge Frontend',  status: 'Rejected', reward: '750 BOT',  date: '2026-10-28', repo: 'https://github.com/dev/bridge' }
-  ];
-
-  container.innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Bounty</th><th>Repo</th><th>Date</th><th>Reward</th><th>Status</th></tr></thead>
-        <tbody>
-          ${subs.map(s => `
-            <tr>
-              <td style="font-weight:500;">${s.bounty}</td>
-              <td><a href="${s.repo}" target="_blank" class="sub-link">View Repo ↗</a></td>
-              <td class="text-muted">${s.date}</td>
-              <td class="mono">${s.reward}</td>
-              <td>${statusBadge(s.status)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-async function renderDevEarningsPage() {
-  setMain(`
-    <div class="page-title">Earnings</div>
-    <div class="page-subtitle">Your on-chain reward history and pending withdrawals.</div>
-    <div class="stat-cards">
-      <div class="stat-card">
-        <div class="stat-card-label">Pending BOT</div>
-        <div class="stat-card-value text-green" id="earn-bot">0 BOT</div>
-        <div class="stat-card-sub">Ready to withdraw</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Pending USDT</div>
-        <div class="stat-card-value text-green" id="earn-usdt">0 USDT</div>
-        <div class="stat-card-sub">Ready to withdraw</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Total Earned (All Time)</div>
-        <div class="stat-card-value" id="earn-total">$0</div>
-      </div>
-    </div>
-    <div class="flex gap-3 mt-6 mb-8">
-      <button class="btn btn-green btn-lg" onclick="withdrawBOT()">💸 Withdraw BOT</button>
-      <button class="btn btn-green btn-lg" onclick="withdrawUSDT()">💸 Withdraw USDT</button>
-    </div>
-    <h3 style="margin-bottom:16px;">Earning History</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Bounty</th><th>Amount</th><th>Currency</th><th>Date</th><th>Tx</th></tr></thead>
-        <tbody>
-          <tr><td>Build DEX UI</td><td class="mono text-green">487.5</td><td>BOT</td><td>2026-10-20</td><td><a href="https://scan.botchain.ai" target="_blank" class="text-accent">View ↗</a></td></tr>
-        </tbody>
-      </table>
-    </div>
-  `);
-
-  try {
-    if (contract && currentAccount) {
-      const [b, u] = await contract.getPendingBalance(currentAccount);
-      setElText('earn-bot',  ethers.formatEther(b) + ' BOT');
-      setElText('earn-usdt', ethers.formatUnits(u, 6) + ' USDT');
-    }
-  } catch {}
-}
-
-async function renderDevProfilePage() {
-  setMain(`
-    <div class="page-title">My Profile</div>
-    <div class="page-subtitle">Public developer profile visible to all organizations.</div>
-    <div class="card" style="max-width:600px;">
-      <div class="profile-banner" style="margin:-24px -24px 0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;"></div>
-      <div class="profile-avatar">${(currentAccount||'0x')[2]?.toUpperCase()}</div>
-      <div class="profile-info">
-        <div class="profile-name" id="dp-name">Loading...</div>
-        <div class="profile-role">Developer</div>
-        <div id="dp-github" style="margin-bottom:12px;"></div>
-        <div id="dp-skills" style="margin-bottom:16px;"></div>
-        <div id="dp-bio" class="text-sm" style="color:var(--muted);"></div>
-      </div>
-    </div>
-    <button class="btn btn-ghost mt-6" onclick="openRegisterModal('dev')">Edit Profile</button>
-  `);
-
-  try {
-    if (contract) {
-      const [username, skills, githubUrl, bio] = await contract.devProfiles(currentAccount);
-      setElText('dp-name', username || shortAddr(currentAccount));
-      document.getElementById('dp-github').innerHTML = githubUrl ? `<a href="${githubUrl}" target="_blank" class="text-accent text-sm">🐙 ${githubUrl}</a>` : '';
-      document.getElementById('dp-skills').innerHTML = (skills||'').split(',').map(s=>`<span class="badge badge-blue" style="margin-right:5px;">${s.trim()}</span>`).join('');
-      setElText('dp-bio', bio);
-    } else {
-      setElText('dp-name', shortAddr(currentAccount));
-    }
-  } catch {}
-}
-
-async function renderOrgProfilePage() {
-  setMain(`
-    <div class="page-title">Organization Profile</div>
-    <div class="page-subtitle">Public profile visible to all developers on BountyForge.</div>
-    <div class="card" style="max-width:600px;">
-      <div class="profile-banner" style="margin:-24px -24px 0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;"></div>
-      <div class="profile-avatar">🏢</div>
-      <div class="profile-info">
-        <div class="profile-name" id="op-name">Loading...</div>
-        <div class="profile-role">Organization</div>
-        <div id="op-web" style="margin-bottom:12px;"></div>
-        <div id="op-desc" class="text-sm" style="color:var(--muted);"></div>
-      </div>
-    </div>
-    <button class="btn btn-ghost mt-6" onclick="openRegisterModal('org')">Edit Profile</button>
-  `);
-
-  try {
-    if (contract) {
-      const [name,,web,desc] = await contract.orgProfiles(currentAccount);
-      setElText('op-name', name || shortAddr(currentAccount));
-      document.getElementById('op-web').innerHTML = web ? `<a href="${web}" target="_blank" class="text-accent text-sm">🌐 ${web}</a>` : '';
-      setElText('op-desc', desc);
-    } else {
-      setElText('op-name', shortAddr(currentAccount));
-    }
-  } catch {}
-}
-
-/* ═══════════════════════════════════════
-   EXPLORE PAGE
-═══════════════════════════════════════ */
-async function renderExplorePage() {
-  setMain(`
-    <div class="page-title">Explore Bounties</div>
-    <div class="page-subtitle">Browse open bounties from projects across all ecosystems.</div>
-    <div class="filters">
-      <input class="search-input" id="explore-search" type="text" placeholder="🔍 Search bounties...">
-      <select class="filter-select" id="filter-status">
-        <option value="">All Status</option>
-        <option value="Open">Open</option>
-        <option value="Draft">Draft</option>
-        <option value="InReview">In Review</option>
-        <option value="Completed">Completed</option>
-      </select>
-      <select class="filter-select" id="filter-eco">
-        <option value="">All Ecosystems</option>
-        <option>BOT Chain</option>
-        <option>Ethereum</option>
-        <option>Celo</option>
-        <option>Polygon</option>
-        <option>Stellar/Soroban</option>
-        <option>Avalanche</option>
-        <option>Solana</option>
-      </select>
-      <select class="filter-select" id="filter-currency">
-        <option value="">All Currencies</option>
-        <option>BOT</option>
-        <option>USDT</option>
-      </select>
-    </div>
-    <div id="explore-grid"></div>
-  `);
-
-  const render = () => {
-    const search   = document.getElementById('explore-search')?.value.toLowerCase() || '';
-    const status   = document.getElementById('filter-status')?.value || '';
-    const eco      = document.getElementById('filter-eco')?.value || '';
-    const currency = document.getElementById('filter-currency')?.value || '';
-
-    let list = getMockBounties();
-    if (search)   list = list.filter(b => b.title.toLowerCase().includes(search) || (b.skills||'').toLowerCase().includes(search));
-    if (status)   list = list.filter(b => b.status === status);
-    if (eco)      list = list.filter(b => b.ecosystem === eco);
-    if (currency) list = list.filter(b => b.currency === currency);
-
-    const grid = document.getElementById('explore-grid');
-    if (!grid) return;
-    if (!list.length) { grid.innerHTML = emptyState('🔍', 'No bounties found', 'Try different filters.'); return; }
-    grid.innerHTML = list.map(b => bountyRowHTML(b, false)).join('');
-  };
-
-  render();
-  ['explore-search','filter-status','filter-eco','filter-currency'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', render);
-  });
-}
-
-/* ═══════════════════════════════════════
-   LEADERBOARD PAGE
-═══════════════════════════════════════ */
-function renderLeaderboardPage() {
-  const devs = [
-    { rank:1, name:'0xAlpha', skills:'Solidity, Rust', earned:'12,500 BOT', completed:8 },
-    { rank:2, name:'web3_jane', skills:'React, TypeScript', earned:'9,200 BOT', completed:6 },
-    { rank:3, name:'blockdevops', skills:'DevOps, Go', earned:'7,800 USDT', completed:5 },
-    { rank:4, name:'crypt0bob', skills:'Solidity, Python', earned:'6,100 BOT', completed:4 },
-    { rank:5, name:'zk_alice', skills:'ZK, Rust', earned:'5,500 USDT', completed:3 },
-    { rank:6, name:'defi_hero', skills:'TypeScript, Solidity', earned:'4,900 BOT', completed:3 },
-    { rank:7, name:'chainhacker', skills:'Python, Web3', earned:'4,100 BOT', completed:2 },
-    { rank:8, name:'nullbyte99', skills:'Solidity, C++', earned:'3,700 USDT', completed:2 },
-    { rank:9, name:'bot_builder', skills:'BOT Chain, Go', earned:'3,200 BOT', completed:2 },
-    { rank:10, name:'soroban_dev', skills:'Rust, Stellar', earned:'2,800 USDT', completed:1 },
-  ];
-
-  setMain(`
-    <div class="page-title">🏆 Leaderboard</div>
-    <div class="page-subtitle">Top contributors ranked by total on-chain earnings.</div>
-    <div class="tabs">
-      <button class="tab-btn active">By Earnings</button>
-      <button class="tab-btn">By Completions</button>
-    </div>
-    <div>
-      ${devs.map(d => `
-        <div class="leader-row">
-          <div class="leader-rank ${d.rank <= 3 ? 'top':''}">${d.rank <= 3 ? ['🥇','🥈','🥉'][d.rank-1] : d.rank}</div>
-          <div class="leader-avatar">${d.name[0].toUpperCase()}</div>
-          <div class="leader-info">
-            <div class="leader-name">${d.name}</div>
-            <div class="leader-skills">${d.skills}</div>
-          </div>
-          <div style="text-align:right;">
-            <div class="leader-earned">${d.earned}</div>
-            <div class="text-xs text-muted">${d.completed} bounties</div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `);
-}
-
-/* ═══════════════════════════════════════
-   ADMIN DASHBOARD
-═══════════════════════════════════════ */
-function renderAdminDashboard() {
-  setMain(`
-    <div class="page-title">🛡️ Admin Panel</div>
-    <div class="page-subtitle">Platform administration — resolve disputes, manage fees, verify organizations.</div>
-    <div class="stat-cards">
-      <div class="stat-card"><div class="stat-card-label">Accumulated BOT Fees</div><div class="stat-card-value" id="admin-bot">0 BOT</div></div>
-      <div class="stat-card"><div class="stat-card-label">Accumulated USDT Fees</div><div class="stat-card-value" id="admin-usdt">0 USDT</div></div>
-      <div class="stat-card"><div class="stat-card-label">Open Disputes</div><div class="stat-card-value text-red" id="admin-disputes">0</div></div>
-    </div>
-    <div class="flex gap-3 mb-8">
-      <button class="btn btn-primary" onclick="adminWithdrawFees()">Withdraw Platform Fees</button>
-    </div>
-    <h3 style="margin-bottom:16px;">Active Disputes</h3>
-    <div class="card">
-      ${emptyState('⚖️', 'No open disputes', 'All disputes have been resolved.')}
-    </div>
-  `);
-}
-
-async function adminWithdrawFees() {
-  try {
-    await mockTx(() => contract.withdrawFees());
-    toast('Platform fees withdrawn.', 'success');
-  } catch (err) {
-    toast(err.reason || err.message, 'error');
-  }
-}
-
-/* ═══════════════════════════════════════
-   DOCS PAGE
-═══════════════════════════════════════ */
 function renderDocsPage() {
   setMain(`
     <div class="page-title">📖 Documentation</div>
@@ -2385,392 +1762,6 @@ function renderDocsPage() {
   `);
 }
 
-/* ═══════════════════════════════════════
-   BOUNTY DETAIL MODAL
-═══════════════════════════════════════ */
-function viewBounty(b) {
-  document.getElementById('modal-bounty-title').textContent = b.title;
-
-  const canSubmit = currentAccount && userRole === 'dev' && b.status === 'Open';
-  const isOrg = currentAccount && userRole === 'org';
-  const isDeadlinePassed = new Date(b.deadline) < new Date();
-
-  document.getElementById('modal-bounty-body').innerHTML = `
-    <div class="detail-header">
-      <div>
-        <div class="flex gap-2 mb-6">${statusBadge(b.status)}<span class="badge badge-gray">${b.ecosystem}</span></div>
-        <div style="font-size:0.875rem;color:var(--muted);margin-bottom:4px;">${b.org_name || 'Organization'}</div>
-        <h3 style="font-size:1.3rem;margin-bottom:0;">${b.title}</h3>
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:1.5rem;font-weight:700;color:var(--green);font-family:var(--mono);">${b.reward} ${b.currency}</div>
-        <div style="font-size:0.8rem;color:var(--muted);">per winner · up to ${b.maxWinners||1} winners</div>
-        ${canSubmit && !isDeadlinePassed ? `<button class="btn btn-primary btn-sm mt-2" onclick="closeModal('bounty-modal');openSubmitModal(${b.id})">Submit Work</button>` : ''}
-        ${isOrg && b.status==='Draft' ? `<button class="btn btn-primary btn-sm mt-2" onclick="closeModal('bounty-modal');openDeposit(${JSON.stringify(b).replace(/'/g,'')})">Fund Bounty</button>` : ''}
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title">Description</div>
-      <div class="detail-desc">${b.description}</div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title">Technical Requirements</div>
-      <div class="detail-desc">${b.requirements||'See description.'}</div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title">Details</div>
-      <div class="detail-meta-grid">
-        <div class="detail-meta-item"><div class="detail-meta-label">Skills</div><div class="detail-meta-value">${b.skills||'—'}</div></div>
-        <div class="detail-meta-item"><div class="detail-meta-label">Language</div><div class="detail-meta-value">${b.language||'—'}</div></div>
-        <div class="detail-meta-item"><div class="detail-meta-label">Ecosystem</div><div class="detail-meta-value">${b.ecosystem||'—'}</div></div>
-        <div class="detail-meta-item"><div class="detail-meta-label">Deadline</div><div class="detail-meta-value">${formatDeadline(b.deadline)}</div></div>
-        <div class="detail-meta-item"><div class="detail-meta-label">Currency</div><div class="detail-meta-value">${b.currency}</div></div>
-        <div class="detail-meta-item"><div class="detail-meta-label">Max Winners</div><div class="detail-meta-value">${b.maxWinners||1}</div></div>
-      </div>
-    </div>
-
-    ${b.submissionInstructions ? `
-    <div class="detail-section">
-      <div class="detail-section-title">Submission Instructions</div>
-      <div class="detail-desc">${b.submissionInstructions}</div>
-    </div>` : ''}
-
-    <div class="detail-section">
-      <div class="detail-section-title">Escrow</div>
-      <div class="alert alert-info">
-        💡 Funds for this bounty are held in the BountyForge escrow contract on BOT Chain. Payment is automatic upon approval.
-      </div>
-      <a href="https://scan.botchain.ai" target="_blank" class="text-accent text-sm">View on BOT Chain Explorer →</a>
-    </div>
-  `;
-  openModal('bounty-modal');
-}
-
-function viewSubmissions(bountyId) {
-  const b = getMockBounties().find(b => b.id === bountyId);
-  if (!b) return;
-  document.getElementById('modal-bounty-title').textContent = `Submissions — ${b.title}`;
-
-  // Mock submissions for demo
-  const subs = [
-    { dev: '0xDev1...abcd', repo: 'https://github.com/dev1/repo', pr: 'https://github.com/org/repo/pull/1', status: 'Pending', notes: 'Implemented full DEX integration with slippage protection.' },
-    { dev: '0xDev2...efgh', repo: 'https://github.com/dev2/repo', pr: '', status: 'Pending', notes: 'Complete solution with unit tests and deployment scripts.' }
-  ];
-
-  document.getElementById('modal-bounty-body').innerHTML = subs.length ? subs.map((s, i) => `
-    <div class="submission-card">
-      <div class="sub-dev-row">
-        <div class="leader-avatar" style="width:30px;height:30px;font-size:12px;">D</div>
-        <div>
-          <div style="font-size:0.875rem;font-weight:500;">${s.dev}</div>
-          <div class="text-xs text-muted">Submitted recently</div>
-        </div>
-        <div style="margin-left:auto;">${statusBadge(s.status)}</div>
-      </div>
-      <div class="sub-links">
-        <a href="${s.repo}" target="_blank" class="sub-link">📁 Repository</a>
-        ${s.pr ? `<a href="${s.pr}" target="_blank" class="sub-link">🔀 Pull Request</a>` : ''}
-      </div>
-      <div class="text-sm" style="color:var(--muted);margin-bottom:12px;">${s.notes}</div>
-      ${s.status === 'Pending' ? `
-        <div class="sub-actions">
-          <button class="btn btn-green btn-sm" onclick="approveSubmission(${bountyId}, ${i})">✓ Approve</button>
-          <button class="btn btn-red btn-sm" onclick="openRejectModal(${bountyId}, ${i})">✗ Reject</button>
-        </div>` : ''}
-    </div>`).join('') : emptyState('📭', 'No submissions yet', 'Submissions will appear here when developers submit their work.');
-
-  openModal('bounty-modal');
-}
-
-/* ═══════════════════════════════════════
-   BOUNTY CREATION
-═══════════════════════════════════════ */
-async function createBounty() {
-  const btn = document.getElementById('create-bounty-btn');
-  try {
-    const title    = val('cb-title');
-    const desc     = val('cb-desc');
-    const req      = val('cb-req');
-    const skills   = val('cb-skills');
-    const lang     = val('cb-lang');
-    const eco      = val('cb-eco');
-    const currency = parseInt(val('cb-currency'));
-    const reward   = val('cb-reward');
-    const winners  = parseInt(val('cb-winners')) || 1;
-    const deadline = val('cb-deadline');
-    const instr    = val('cb-instructions');
-
-    if (!title || !desc || !reward || !deadline) {
-      toast('Fill in all required fields.', 'error');
-      return;
-    }
-
-    const deadlineTs = Math.floor(new Date(deadline).getTime() / 1000);
-    if (deadlineTs <= Math.floor(Date.now() / 1000)) {
-      toast('Deadline must be in the future.', 'error');
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Creating...';
-
-    const rewardWei = currency === 0
-      ? ethers.parseEther(reward)
-      : ethers.parseUnits(reward, 6);
-
-    await mockTx(() => contract.createBounty(
-      title, desc, req, skills, lang, eco,
-      rewardWei, currency, deadlineTs, winners, instr
-    ));
-
-    toast('Bounty created! Now deposit the reward to activate it.', 'success');
-    closeModal('create-bounty-modal');
-
-    if (userRole === 'org') renderOrgBountiesPage();
-
-  } catch (err) {
-    toast(err.reason || err.message || 'Transaction failed.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Create Bounty';
-  }
-}
-
-/* ═══════════════════════════════════════
-   DEPOSIT
-═══════════════════════════════════════ */
-function openDeposit(b) {
-  const totalReward = (b.reward * (b.maxWinners||1));
-  document.getElementById('deposit-modal-body').innerHTML = `
-    <input type="hidden" id="dep-bounty-id" value="${b.id}">
-    <input type="hidden" id="dep-currency" value="${b.currency}">
-    <input type="hidden" id="dep-amount" value="${b.reward}">
-    <input type="hidden" id="dep-winners" value="${b.maxWinners||1}">
-    <div class="alert alert-info">
-      Depositing funds into the BountyForge escrow on BOT Chain. The bounty becomes Open immediately after successful deposit.
-    </div>
-    <div class="detail-meta-grid mt-4">
-      <div class="detail-meta-item"><div class="detail-meta-label">Reward Per Winner</div><div class="detail-meta-value">${b.reward} ${b.currency}</div></div>
-      <div class="detail-meta-item"><div class="detail-meta-label">Max Winners</div><div class="detail-meta-value">${b.maxWinners||1}</div></div>
-      <div class="detail-meta-item"><div class="detail-meta-label">Total to Deposit</div><div class="detail-meta-value text-green">${totalReward} ${b.currency}</div></div>
-    </div>
-  `;
-  openModal('deposit-modal');
-}
-
-async function depositReward() {
-  const btn      = document.getElementById('deposit-btn');
-  const bountyId = val('dep-bounty-id');
-  const currency = val('dep-currency');
-  const amount   = parseFloat(val('dep-amount'));
-  const winners  = parseInt(val('dep-winners'));
-  const total    = amount * winners;
-
-  try {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Depositing...';
-
-    if (currency === 'BOT' || currency === '0') {
-      const totalWei = ethers.parseEther(total.toString());
-      await mockTx(() => contract.depositBOT(parseInt(bountyId), { value: totalWei }));
-    } else {
-      const totalUnits = ethers.parseUnits(total.toString(), 6);
-      // First approve USDT
-      await mockTx(() => usdtContract.approve(CONTRACT_ADDRESS, totalUnits));
-      await mockTx(() => contract.depositUSDT(parseInt(bountyId), totalUnits));
-    }
-
-    toast('Bounty funded and activated! 🎉', 'success');
-    closeModal('deposit-modal');
-    renderOrgBountiesPage();
-
-  } catch (err) {
-    toast(err.reason || err.message || 'Deposit failed.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Deposit & Activate';
-  }
-}
-
-/* ═══════════════════════════════════════
-   SUBMIT WORK
-═══════════════════════════════════════ */
-function openSubmitModal(bountyId) {
-  if (!currentAccount) { toast('Connect wallet first.', 'error'); return; }
-  if (userRole !== 'dev') { toast('Create a developer profile first.', 'error'); return; }
-  document.getElementById('submit-bounty-id').value = bountyId;
-  document.getElementById('sub-repo').value  = '';
-  document.getElementById('sub-pr').value    = '';
-  document.getElementById('sub-notes').value = '';
-  openModal('submit-modal');
-}
-
-async function submitWork() {
-  const btn      = document.getElementById('submit-work-btn');
-  const bountyId = parseInt(document.getElementById('submit-bounty-id').value);
-  const repo     = val('sub-repo');
-  const pr       = val('sub-pr');
-  const notes    = val('sub-notes');
-
-  if (!repo) { toast('Repository URL is required.', 'error'); return; }
-
-  try {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Submitting...';
-
-    await mockTx(() => contract.submitWork(bountyId, repo, pr, notes));
-
-    toast('Submission recorded on BOT Chain! ✅', 'success');
-    closeModal('submit-modal');
-
-  } catch (err) {
-    toast(err.reason || err.message || 'Submission failed.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Submit Work';
-  }
-}
-
-/* ═══════════════════════════════════════
-   APPROVE / REJECT
-═══════════════════════════════════════ */
-async function approveSubmission(bountyId, subIndex) {
-  try {
-    await mockTx(() => contract.approveSubmission(bountyId, subIndex));
-    toast('Submission approved! Payment released to developer.', 'success');
-    closeModal('bounty-modal');
-    renderOrgBountiesPage();
-  } catch (err) {
-    toast(err.reason || err.message, 'error');
-  }
-}
-
-function openRejectModal(bountyId, subIndex) {
-  document.getElementById('reject-bounty-id').value  = bountyId;
-  document.getElementById('reject-sub-index').value  = subIndex;
-  document.getElementById('reject-feedback').value   = '';
-  openModal('reject-modal');
-}
-
-async function confirmReject() {
-  const bountyId = parseInt(document.getElementById('reject-bounty-id').value);
-  const subIndex = parseInt(document.getElementById('reject-sub-index').value);
-  const feedback = val('reject-feedback');
-  if (!feedback) { toast('Feedback is required when rejecting.', 'error'); return; }
-
-  try {
-    await mockTx(() => contract.rejectSubmission(bountyId, subIndex, feedback));
-    toast('Submission rejected with feedback.', 'info');
-    closeModal('reject-modal');
-  } catch (err) {
-    toast(err.reason || err.message, 'error');
-  }
-}
-
-/* ═══════════════════════════════════════
-   WITHDRAWALS
-═══════════════════════════════════════ */
-async function withdrawBOT() {
-  if (!currentAccount) { toast('Connect wallet first.', 'error'); return; }
-  try {
-    await mockTx(() => contract.withdrawBOT());
-    toast('BOT withdrawn to your wallet!', 'success');
-  } catch (err) {
-    toast(err.reason || err.message || 'Nothing to withdraw or failed.', 'error');
-  }
-}
-
-async function withdrawUSDT() {
-  if (!currentAccount) { toast('Connect wallet first.', 'error'); return; }
-  try {
-    await mockTx(() => contract.withdrawUSDT());
-    toast('USDT withdrawn to your wallet!', 'success');
-  } catch (err) {
-    toast(err.reason || err.message || 'Nothing to withdraw or failed.', 'error');
-  }
-}
-
-/* ═══════════════════════════════════════
-   LANDING DATA
-═══════════════════════════════════════ */
-async function loadLandingData() {
-  renderFAQ();
-
-  // Animate stats
-  animateCount('stat-bounties', 24);
-  animateCount('stat-devs', 312);
-  animateCount('stat-orgs', 18);
-  document.getElementById('stat-rewards').textContent = '$142K';
-
-  // Featured bounties
-  const grid = document.getElementById('featured-grid');
-  if (grid) {
-    const featured = getMockBounties().filter(b => b.status === 'Open').slice(0, 3);
-    grid.innerHTML = featured.map(b => `
-      <div class="bounty-card" onclick='viewBounty(${JSON.stringify(b)})'>
-        <div class="bounty-card-header">
-          <div>
-            <div class="bounty-card-title">${b.title}</div>
-            <div class="bounty-org-name">${b.org_name}</div>
-          </div>
-          <div class="bounty-reward">${b.reward} ${b.currency}</div>
-        </div>
-        <div class="bounty-tags">
-          ${(b.skills||'').split(',').map(s=>`<span class="bounty-tag">${s.trim()}</span>`).filter((_,i)=>i<3).join('')}
-          <span class="bounty-tag">${b.ecosystem}</span>
-        </div>
-        <div class="bounty-meta">
-          <span class="bounty-deadline">⏰ ${formatDeadline(b.deadline)}</span>
-          ${statusBadge(b.status)}
-        </div>
-      </div>`).join('');
-  }
-
-  // Top devs
-  const topDevs = document.getElementById('top-devs-list');
-  if (topDevs) {
-    const devs = [
-      { rank:1, name:'0xAlpha',    skills:'Solidity, Rust',       earned:'12,500 BOT' },
-      { rank:2, name:'web3_jane',  skills:'React, TypeScript',    earned:'9,200 BOT'  },
-      { rank:3, name:'blockdevops',skills:'DevOps, Go',           earned:'7,800 USDT' },
-      { rank:4, name:'crypt0bob',  skills:'Solidity, Python',     earned:'6,100 BOT'  },
-      { rank:5, name:'zk_alice',   skills:'ZK Proofs, Rust',      earned:'5,500 USDT' },
-    ];
-    topDevs.innerHTML = devs.map(d => `
-      <div class="leader-row">
-        <div class="leader-rank ${d.rank<=3?'top':''}">${d.rank<=3?['🥇','🥈','🥉'][d.rank-1]:d.rank}</div>
-        <div class="leader-avatar">${d.name[0].toUpperCase()}</div>
-        <div class="leader-info">
-          <div class="leader-name">${d.name}</div>
-          <div class="leader-skills">${d.skills}</div>
-        </div>
-        <div class="leader-earned">${d.earned}</div>
-      </div>`).join('');
-  }
-}
-
-/* ═══════════════════════════════════════
-   MOCK DATA (replace with contract calls)
-═══════════════════════════════════════ */
-function getMockBounties() {
-  return [
-    { id:1, title:'Build DEX UI for BOT Chain', org_name:'BOT Finance', description:'Create a fully functional AMM DEX front-end using Next.js / vanilla JS that integrates with our BOT Chain smart contracts. Must support swap, liquidity provision and farming views.', requirements:'Ethers.js v6, support MetaMask, responsive design, TypeScript', skills:'JavaScript, TypeScript, ethers.js', language:'TypeScript', ecosystem:'BOT Chain', reward:800, currency:'BOT', deadline:'2026-12-15', maxWinners:2, status:'Open', submissions:3 },
-    { id:2, title:'Solidity Smart Contract Audit', org_name:'SecureChain DAO', description:'Perform a comprehensive security audit of our yield aggregator contracts. Identify reentrancy vulnerabilities, access control issues and economic attack vectors.', requirements:'Foundry, Slither, Echidna, produce full report', skills:'Solidity, Security, Foundry', language:'Solidity', ecosystem:'Ethereum', reward:2000, currency:'USDT', deadline:'2026-12-01', maxWinners:1, status:'Open', submissions:1 },
-    { id:3, title:'Celo Mobile Wallet Integration', org_name:'CeloBuilders', description:'Integrate Celo\'s MiniPay wallet into our React Native savings app. Must support stablecoin transfers, gas abstraction and social recovery.', requirements:'React Native, Celo SDK, MiniPay integration', skills:'React Native, Celo, Web3', language:'TypeScript', ecosystem:'Celo', reward:1500, currency:'USDT', deadline:'2026-11-25', maxWinners:1, status:'Open', submissions:0 },
-    { id:4, title:'Soroban Cross-Chain Bridge', org_name:'Stellar Labs', description:'Build a trustless bridge allowing BOT Chain assets to be wrapped and used on Stellar Soroban. Include contract deployment scripts and a test suite.', requirements:'Rust, Soroban SDK, BOT Chain RPC', skills:'Rust, Soroban, Smart Contracts', language:'Rust', ecosystem:'Stellar/Soroban', reward:3000, currency:'USDT', deadline:'2027-01-10', maxWinners:1, status:'Open', submissions:2 },
-    { id:5, title:'BOT Chain Block Explorer Widget', org_name:'BOT Foundation', description:'Create an embeddable block explorer widget that any project can drop into their docs or dashboard to show live BOT Chain transaction data.', requirements:'Vanilla JS, no frameworks, connects to scan.botchain.ai API', skills:'JavaScript, HTML, CSS, APIs', language:'JavaScript', ecosystem:'BOT Chain', reward:400, currency:'BOT', deadline:'2026-12-20', maxWinners:3, status:'Open', submissions:5 },
-    { id:6, title:'ZK Proof Verifier Contract', org_name:'zkDAO', description:'Implement an on-chain Groth16 proof verifier in Solidity deployable on BOT Chain. Provide a demo circuit and integration tests.', requirements:'Solidity, snarkjs, Foundry, produce circuit + verifier', skills:'Solidity, ZK, Cryptography', language:'Solidity', ecosystem:'BOT Chain', reward:2500, currency:'BOT', deadline:'2026-12-30', maxWinners:1, status:'Open', submissions:0 },
-    { id:7, title:'DAO Governance Dashboard', org_name:'MetaGov DAO', description:'Build a governance dashboard for our DAO using on-chain data from BOT Chain. Must display proposals, votes, delegates and treasury.', requirements:'ethers.js, real-time events, responsive', skills:'TypeScript, React, ethers.js', language:'TypeScript', ecosystem:'BOT Chain', reward:1200, currency:'USDT', deadline:'2026-12-10', maxWinners:1, status:'Completed', submissions:4 },
-    { id:8, title:'NFT Minting Bot (Telegram)', org_name:'PixelMint', description:'Build a Telegram bot that lets users mint NFTs on BOT Chain by sending payment directly in-chat. Must handle gas estimation and mint confirmation.', requirements:'Node.js, grammY or Telegraf, ethers.js, BOT Chain NFT standard', skills:'Node.js, Telegram Bot, ethers.js', language:'JavaScript', ecosystem:'BOT Chain', reward:600, currency:'BOT', deadline:'2026-11-30', maxWinners:2, status:'InReview', submissions:3 },
-  ];
-}
-
-/* ═══════════════════════════════════════
-   WHITEPAPER PDF GENERATION
-═══════════════════════════════════════ */
 function downloadWhitepaper() {
   // Generate a styled HTML whitepaper and trigger a print-to-PDF experience
   const content = `<!DOCTYPE html>
@@ -2926,89 +1917,1100 @@ function downloadWhitepaper() {
   toast('Whitepaper downloaded. Open in browser and Print → Save as PDF.', 'info');
 }
 
+
 /* ═══════════════════════════════════════
-   UTILITY FUNCTIONS
+   CHAIN READS
 ═══════════════════════════════════════ */
-function shortAddr(addr) {
-  if (!addr) return '';
-  return addr.slice(0, 6) + '...' + addr.slice(-4);
+function initChain() {
+  if (!chainReady) {
+    chainReady = (async () => {
+      adminAddress = (await bfRead.admin()).toLowerCase();
+      usdtAddress  = await bfRead.usdtToken();
+      try { usdtDecimals = Number(await new ethers.Contract(usdtAddress, ERC20_ABI, readProvider).decimals()); } catch {}
+    })().catch(e => { chainReady = null; throw e; });
+  }
+  return chainReady;
 }
 
-function val(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : '';
+const decOf = cur => cur === 'BOT' ? 18 : usdtDecimals;
+
+function normBounty(v, subs, org) {
+  const currency = Number(v.currency) === 0 ? 'BOT' : 'USDT';
+  return {
+    id: Number(v.id), org: v.org.toLowerCase(),
+    org_name: org.name || shortAddr(v.org), org_verified: org.verified,
+    title: v.title, description: v.description, requirements: v.requirements,
+    skills: v.skills, language: v.language, ecosystem: v.ecosystem,
+    submissionInstructions: v.submissionInstructions,
+    currency, currencyId: Number(v.currency),
+    rewardRaw: v.rewardPerWinner, totalRaw: v.totalReward, depositedRaw: v.depositedAmount,
+    reward: fmtAmt(v.rewardPerWinner, decOf(currency)),
+    deadline: Number(v.deadline) * 1000,
+    maxWinners: Number(v.maxWinners), approvedCount: Number(v.approvedCount),
+    status: STATUS[Number(v.status)] || 'Unknown',
+    subs: Array.from(subs).map((s, i) => ({
+      index: i, developer: s.developer.toLowerCase(), repoUrl: s.repoUrl, prUrl: s.prUrl,
+      notes: s.notes, submittedAt: Number(s.submittedAt) * 1000,
+      status: SUB_STATUS[Number(s.status)] || 'Unknown', feedback: s.feedback
+    }))
+  };
 }
 
-function setElText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
+async function loadBounties(force = false) {
+  if (bountyCache && !force) return bountyCache;
+  await initChain();
+  const ids = Array.from(await bfRead.getAllBountyIds());
+  const raw = await Promise.all(ids.map(async id => {
+    const [v, subs] = await Promise.all([bfRead.getBounty(id), bfRead.getSubmissions(id)]);
+    return { v, subs };
+  }));
+  const orgs = {};
+  await Promise.all([...new Set(raw.map(r => r.v.org.toLowerCase()))].map(async a => {
+    try { const p = await bfRead.orgProfiles(a); orgs[a] = { name: p.name, verified: p.verified }; }
+    catch { orgs[a] = { name: '', verified: false }; }
+  }));
+  bountyCache = raw.map(r => normBounty(r.v, r.subs, orgs[r.v.org.toLowerCase()])).sort((a, b) => b.id - a.id);
+  bountyById = {};
+  bountyCache.forEach(b => bountyById[b.id] = b);
+  return bountyCache;
 }
 
-function setMain(html) {
-  document.getElementById('main-panel').innerHTML = html;
+async function devProfilesFor(addrs) {
+  await Promise.all([...new Set(addrs)].filter(a => !devCache[a]).map(async a => {
+    try { const p = await bfRead.devProfiles(a); devCache[a] = { username: p.username, skills: p.skills }; }
+    catch { devCache[a] = { username: '', skills: '' }; }
+  }));
+  return devCache;
 }
 
-function openModal(id) {
-  document.getElementById(id)?.classList.add('open');
+async function getLeaders() {
+  const all = await loadBounties();
+  const m = {};
+  all.forEach(b => b.subs.forEach(s => {
+    if (s.status !== 'Approved') return;
+    const d = m[s.developer] || (m[s.developer] = { addr: s.developer, count: 0, bot: 0n, usdt: 0n });
+    const payout = b.rewardRaw - (b.rewardRaw * FEE_BPS) / 10000n;
+    d.count++;
+    if (b.currency === 'BOT') d.bot += payout; else d.usdt += payout;
+  }));
+  const list = Object.values(m).sort((a, b) => b.count - a.count || (b.bot > a.bot ? 1 : b.bot < a.bot ? -1 : 0));
+  const profiles = await devProfilesFor(list.map(d => d.addr));
+  list.forEach(d => { d.name = profiles[d.addr]?.username || shortAddr(d.addr); d.skills = profiles[d.addr]?.skills || ''; });
+  return list;
 }
 
-function closeModal(id) {
-  document.getElementById(id)?.classList.remove('open');
+/* ═══════════════════════════════════════
+   TRANSACTIONS
+═══════════════════════════════════════ */
+async function sendTx(to, iface, fn, args = [], value = 0n) {
+  if (!currentAccount) throw new Error('Connect your wallet first.');
+  if (txBusy) throw new Error('Another transaction is still pending.');
+  txBusy = true;
+  try {
+    await ensureChain();
+    const data = iface.encodeFunctionData(fn, args);
+    let gas;
+    // Estimate on our own RPC so reverts show a reason instead of hanging in the wallet
+    try { gas = await readProvider.estimateGas({ from: currentAccount, to, data, value }); }
+    catch (e) { throw new Error(cleanRevert(e)); }
+    toast('Confirm the transaction in your wallet…', 'info');
+    const hash = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{ from: currentAccount, to, data, value: ethers.toQuantity(value), gas: ethers.toQuantity(gas * 12n / 10n) }]
+    });
+    toast('Sent. Waiting for confirmation…', 'info', hash);
+    const receipt = await readProvider.waitForTransaction(hash, 1, 180000);
+    if (!receipt) throw new Error('Not confirmed within 3 minutes. Check the explorer.');
+    if (receipt.status !== 1) throw new Error('Transaction reverted.');
+    toast('Confirmed on BOT Chain ✓', 'success', hash);
+    return { hash, receipt };
+  } finally { txBusy = false; }
+}
+const bf = (fn, args, value) => sendTx(CONTRACT_ADDRESS, BF_IFACE, fn, args, value);
+
+async function refreshAfterTx() {
+  try { await loadBounties(true); } catch {}
+  if (currentPage !== 'landing') showPage(currentPage); else loadLandingData();
 }
 
-// Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
+/* ═══════════════════════════════════════
+   WALLET CONNECTION
+═══════════════════════════════════════ */
+async function ensureChain() {
+  const id = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16);
+  if (id === BOT_CHAIN_ID) return;
+  try {
+    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BOT_CHAIN_HEX }] });
+  } catch (e) {
+    if (e.code === 4902 || e.code === -32603 || /unrecognized|not been added/i.test(e.message || '')) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{ chainId: BOT_CHAIN_HEX, chainName: 'BOT Chain Mainnet',
+          nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 },
+          rpcUrls: [RPC_URL], blockExplorerUrls: [EXPLORER] }]
+      });
+    } else throw e;
+  }
+}
+
+// Rejects instead of hanging forever when the wallet or RPC never answers
+function withTimeout(promise, ms, msg) {
+  return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
+}
+
+async function connectWallet(silent = false) {
+  const btn = document.getElementById('connect-btn');
+  if (!window.ethereum) { if (!silent) toast('No wallet detected. Install MetaMask or a compatible wallet.', 'error'); return; }
+  try {
+    if (!silent) btn.innerHTML = '<span class="spinner"></span>';
+    const accounts = await withTimeout(
+      window.ethereum.request({ method: silent ? 'eth_accounts' : 'eth_requestAccounts' }),
+      silent ? 5000 : 60000,
+      'Wallet did not respond. Open MetaMask from the toolbar, reject any pending requests, then try again.'
+    );
+    if (!accounts || !accounts.length) { btn.textContent = 'Connect Wallet'; return; }
+    currentAccount = ethers.getAddress(accounts[0]);
+    attachListeners();
+    await onWalletConnected(silent);
+    // Ask for the network switch after connecting, so a pending switch prompt can't freeze the button
+    if (!silent) {
+      withTimeout(ensureChain(), 60000, 'Network switch not approved')
+        .catch(() => openModal('wrong-chain-modal'));
+    }
+  } catch (err) {
+    btn.textContent = 'Connect Wallet';
+    if (!silent) toast(errText(err), 'error');
+  }
+}
+
+function attachListeners() {
+  if (listenersAttached || !window.ethereum.on) return;
+  listenersAttached = true;
+  window.ethereum.on('accountsChanged', a => {
+    if (!a.length) return disconnectWallet();
+    currentAccount = ethers.getAddress(a[0]);
+    onWalletConnected(true);
   });
+  window.ethereum.on('chainChanged', () => window.location.reload());
+}
+
+async function switchToBOTChain() {
+  try { await ensureChain(); closeModal('wrong-chain-modal'); }
+  catch (e) { toast('Could not switch to BOT Chain: ' + errText(e), 'error'); }
+}
+
+async function detectRole() {
+  await withTimeout(initChain(), 15000, 'BOT Chain RPC did not respond');
+  if (currentAccount.toLowerCase() === adminAddress) return 'admin';
+  const [org, dev] = await withTimeout(
+    Promise.all([bfRead.orgProfiles(currentAccount), bfRead.devProfiles(currentAccount)]),
+    15000, 'BOT Chain RPC did not respond'
+  );
+  if (org.name) return 'org';
+  if (dev.registered) return 'dev';
+  return null;
+}
+
+async function onWalletConnected(silent) {
+  document.getElementById('nav-wallet').style.display  = 'flex';
+  document.getElementById('connect-btn').style.display = 'none';
+  document.getElementById('nav-address').textContent   = shortAddr(currentAccount);
+  try { userRole = await detectRole(); }
+  catch (e) { userRole = null; toast('Could not read the contract: ' + errText(e), 'error'); }
+  if (!silent) toast(`Wallet connected: ${shortAddr(currentAccount)}`, 'success');
+  if (!silent || currentPage !== 'landing') showDashboard(); else buildSidebar();
+}
+
+function disconnectWallet() {
+  currentAccount = null; userRole = null;
+  document.getElementById('nav-wallet').style.display  = 'none';
+  document.getElementById('connect-btn').style.display = 'inline-flex';
+  document.getElementById('connect-btn').textContent   = 'Connect Wallet';
+  showLanding();
+}
+
+/* ═══════════════════════════════════════
+   PAGE ROUTING
+═══════════════════════════════════════ */
+function showLanding() {
+  document.getElementById('landing').style.display   = 'block';
+  document.getElementById('app-shell').style.display = 'none';
+  currentPage = 'landing';
+  loadLandingData();
+}
+
+function showDashboard() {
+  showPage(userRole === 'org' ? 'org-dash' : userRole === 'dev' ? 'dev-dash' : userRole === 'admin' ? 'admin-dash' : 'new-user');
+}
+
+function showPage(page) {
+  document.getElementById('landing').style.display   = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  buildSidebar();
+  currentPage = page;
+  switch (page) {
+    case 'explore':         renderExplorePage(); break;
+    case 'leaderboard':     renderLeaderboardPage(); break;
+    case 'docs':            renderDocsPage(); break;
+    case 'org-dash':        renderOrgDashboard(); break;
+    case 'dev-dash':        renderDevDashboard(); break;
+    case 'org-bounties':    renderOrgBountiesPage(); break;
+    case 'org-profile':     renderOrgProfilePage(); break;
+    case 'dev-profile':     renderDevProfilePage(); break;
+    case 'dev-submissions': renderDevSubmissionsPage(); break;
+    case 'dev-earnings':    renderDevEarningsPage(); break;
+    case 'admin-dash':      renderAdminDashboard(); break;
+    case 'new-user':        currentAccount ? renderNewUserPage() : renderExplorePage(); break;
+    default:                renderExplorePage();
+  }
+}
+
+/* ═══════════════════════════════════════
+   REGISTRATION
+═══════════════════════════════════════ */
+async function submitRegistration() {
+  const body = document.getElementById('register-modal-body');
+  const type = body.dataset.type;
+  const btn  = document.getElementById('register-submit-btn');
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving...';
+    if (type === 'dev') {
+      const username = val('reg-username');
+      if (!username) throw new Error('Username is required.');
+      await bf('registerDev', [username, val('reg-skills'), val('reg-github'), val('reg-bio')]);
+      delete devCache[currentAccount.toLowerCase()];
+      toast('Developer profile saved!', 'success');
+    } else {
+      const name = val('reg-orgname');
+      if (!name) throw new Error('Organization name is required.');
+      await bf('registerOrg', [name, val('reg-website'), val('reg-orgdesc'), '']);
+      toast('Organization saved!', 'success');
+    }
+    userRole = await detectRole();
+    closeModal('register-modal');
+    showDashboard();
+  } catch (err) {
+    toast(errText(err), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Profile';
+  }
+}
+
+/* ═══════════════════════════════════════
+   BOUNTY CARDS
+═══════════════════════════════════════ */
+function tagsHTML(b, max) {
+  const t = (b.skills || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (max) t.splice(max);
+  [b.ecosystem, b.language].filter(Boolean).forEach(x => t.push(x));
+  return t.map(s => `<span class="bounty-tag">${esc(s)}</span>`).join('');
+}
+
+function bountyRowHTML(b) {
+  const me = currentAccount ? currentAccount.toLowerCase() : null;
+  const isOwner = me && b.org === me;
+  const expired = b.deadline < Date.now();
+  const n = b.subs.length;
+  const a = [`<button class="btn btn-ghost btn-sm" onclick="viewBounty(${b.id})">View</button>`];
+  if (isOwner) {
+    if (b.status === 'Draft') a.push(`<button class="btn btn-primary btn-sm" onclick="openDeposit(${b.id})">Fund</button>`);
+    if (b.status === 'Draft' || (b.status === 'Open' && n === 0)) a.push(`<button class="btn btn-red btn-sm" onclick="cancelBounty(${b.id})">Cancel</button>`);
+    if (n > 0) a.push(`<button class="btn btn-ghost btn-sm" onclick="viewSubmissions(${b.id})">Submissions (${n})</button>`);
+    if (expired && b.depositedRaw > 0n && b.status !== 'Cancelled') a.push(`<button class="btn btn-ghost btn-sm" onclick="reclaimUnused(${b.id})">Reclaim</button>`);
+  } else if (SUBMIT_STATUSES.includes(b.status) && !expired) {
+    a.push(`<button class="btn btn-primary btn-sm" onclick="openSubmitModal(${b.id})">Submit Work</button>`);
+  }
+  return `
+  <div class="bounty-card" style="margin-bottom:12px;cursor:default;">
+    <div class="bounty-card-header">
+      <div>
+        <div class="bounty-card-title">${esc(b.title)}</div>
+        <div class="bounty-org-name">${esc(b.org_name)}${b.org_verified ? ' ✓' : ''}</div>
+      </div>
+      <div>
+        <div class="bounty-reward">${b.reward} ${b.currency}</div>
+        <div style="text-align:right;margin-top:4px;">${statusBadge(b.status)}</div>
+      </div>
+    </div>
+    <div class="bounty-tags">${tagsHTML(b)}</div>
+    <div class="bounty-meta">
+      <span class="bounty-deadline">⏰ ${formatDeadline(b.deadline)}</span>
+      <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end;">${a.join('')}</div>
+    </div>
+  </div>`;
+}
+
+function fmtPair(bot, usdt) {
+  const p = [];
+  if (bot > 0n)  p.push(fmtAmt(bot, 18) + ' BOT');
+  if (usdt > 0n) p.push(fmtAmt(usdt, usdtDecimals) + ' USDT');
+  return p.join(' · ') || '0';
+}
+function sumPair(list, key) {
+  let bot = 0n, usdt = 0n;
+  list.forEach(b => { if (b.currency === 'BOT') bot += b[key]; else usdt += b[key]; });
+  return fmtPair(bot, usdt);
+}
+
+/* ═══════════════════════════════════════
+   ORG DASHBOARD
+═══════════════════════════════════════ */
+async function renderOrgDashboard() {
+  setMain(`<div class="page-title">Organization Dashboard</div>
+    <div class="page-subtitle">Manage your bounties and track developer submissions.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Active Bounties</div><div class="stat-card-value" id="od-active">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">In Escrow</div><div class="stat-card-value" id="od-deposited" style="font-size:1.1rem;">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Submissions</div><div class="stat-card-value" id="od-subs">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Completed</div><div class="stat-card-value" id="od-done">—</div></div>
+    </div>
+    <div class="flex-b mb-6">
+      <h3>Recent Bounties</h3>
+      <button class="btn btn-primary btn-sm" onclick="openModal('create-bounty-modal')">+ New Bounty</button>
+    </div>
+    <div id="org-bounties-preview"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  await loadOrgBounties(true);
+}
+
+async function renderOrgBountiesPage() {
+  setMain(`<div class="page-title">My Bounties</div>
+    <div class="page-subtitle">All bounties posted by your organization.</div>
+    <div class="flex gap-3 mb-6">
+      <button class="btn btn-primary" onclick="openModal('create-bounty-modal')">+ New Bounty</button>
+    </div>
+    <div id="org-bounties-full"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  await loadOrgBounties(false);
+}
+
+async function loadOrgBounties(preview) {
+  const container = document.getElementById(preview ? 'org-bounties-preview' : 'org-bounties-full');
+  try {
+    const all  = await loadBounties();
+    const mine = all.filter(b => b.org === currentAccount.toLowerCase());
+    if (preview) {
+      setElText('od-active', mine.filter(b => b.status === 'Open' || b.status === 'InReview').length);
+      setElText('od-deposited', sumPair(mine, 'depositedRaw'));
+      setElText('od-subs', mine.reduce((a, b) => a + b.subs.length, 0));
+      setElText('od-done', mine.filter(b => b.status === 'Completed').length);
+    }
+    const list = preview ? mine.slice(0, 3) : mine;
+    container.innerHTML = list.length
+      ? list.map(bountyRowHTML).join('')
+      : emptyState('📋', 'No bounties yet', 'Create your first bounty to start receiving submissions.');
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-error">Failed to load bounties: ${esc(errText(err))}</div>`;
+  }
+}
+
+async function renderOrgProfilePage() {
+  setMain(`
+    <div class="page-title">Organization Profile</div>
+    <div class="page-subtitle">Public profile visible to all developers on BountyForge.</div>
+    <div class="card" style="max-width:600px;">
+      <div class="profile-banner" style="margin:-24px -24px 0;"></div>
+      <div class="profile-avatar">🏢</div>
+      <div class="profile-info">
+        <div class="profile-name" id="op-name">Loading...</div>
+        <div class="profile-role" id="op-role">Organization</div>
+        <div id="op-web" style="margin-bottom:12px;"></div>
+        <div id="op-desc" class="text-sm" style="color:var(--muted);"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-6" onclick="openRegisterModal('org')">Edit Profile</button>`);
+  try {
+    const p = await bfRead.orgProfiles(currentAccount);
+    setElText('op-name', p.name || shortAddr(currentAccount));
+    setElText('op-role', p.verified ? 'Organization · Verified ✓' : 'Organization');
+    const web = safeUrl(p.website);
+    document.getElementById('op-web').innerHTML = web ? `<a href="${esc(web)}" target="_blank" rel="noopener" class="text-accent text-sm">🌐 ${esc(web)}</a>` : '';
+    setElText('op-desc', p.description);
+  } catch (e) { setElText('op-name', shortAddr(currentAccount)); }
+}
+
+/* ═══════════════════════════════════════
+   DEV DASHBOARD
+═══════════════════════════════════════ */
+async function renderDevDashboard() {
+  setMain(`
+    <div class="page-title">Developer Dashboard</div>
+    <div class="page-subtitle">Track your submissions, earnings and completed bounties.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Pending BOT</div><div class="stat-card-value" id="dd-bot">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Pending USDT</div><div class="stat-card-value" id="dd-usdt">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Submissions</div><div class="stat-card-value" id="dd-subs">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Bounties Won</div><div class="stat-card-value" id="dd-won">—</div></div>
+    </div>
+    <div class="flex gap-3 mb-8">
+      <button class="btn btn-green" onclick="withdrawBOT()">Withdraw BOT</button>
+      <button class="btn btn-green" onclick="withdrawUSDT()">Withdraw USDT</button>
+    </div>
+    <div class="flex-b mb-6" style="flex-wrap:wrap;gap:12px;">
+      <h3>Open Bounties</h3>
+      <button class="btn btn-primary btn-sm" onclick="showPage('explore')">Browse All →</button>
+    </div>
+    <div id="dev-bounties-preview"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  try {
+    const [pend, prof, ids] = await Promise.all([
+      bfRead.getPendingBalance(currentAccount), bfRead.devProfiles(currentAccount), bfRead.getDevSubmittedBounties(currentAccount)
+    ]);
+    setElText('dd-bot',  fmtAmt(pend.botBalance, 18) + ' BOT');
+    setElText('dd-usdt', fmtAmt(pend.usdtBalance, usdtDecimals) + ' USDT');
+    setElText('dd-subs', ids.length);
+    setElText('dd-won',  Number(prof.completedBounties));
+  } catch (e) { toast(errText(e), 'error'); }
+  try {
+    const open = (await loadBounties()).filter(b => SUBMIT_STATUSES.includes(b.status) && b.deadline > Date.now()).slice(0, 4);
+    document.getElementById('dev-bounties-preview').innerHTML = open.length
+      ? open.map(bountyRowHTML).join('')
+      : emptyState('🔍', 'No open bounties right now', 'Check back soon.');
+  } catch (e) { document.getElementById('dev-bounties-preview').innerHTML = `<div class="alert alert-error">${esc(errText(e))}</div>`; }
+}
+
+function mySubs(all) {
+  const me = currentAccount.toLowerCase();
+  const out = [];
+  all.forEach(b => b.subs.forEach(s => { if (s.developer === me) out.push({ b, s }); }));
+  return out;
+}
+
+async function renderDevSubmissionsPage() {
+  setMain(`
+    <div class="page-title">My Submissions</div>
+    <div class="page-subtitle">Track the status of all your submitted work.</div>
+    <div id="dev-subs-list"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  const container = document.getElementById('dev-subs-list');
+  try {
+    const subs = mySubs(await loadBounties());
+    if (!subs.length) { container.innerHTML = emptyState('📤', 'No submissions yet', 'Find an open bounty and submit your work.'); return; }
+    container.innerHTML = `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Bounty</th><th>Repo</th><th>Date</th><th>Reward</th><th>Status</th><th></th></tr></thead>
+        <tbody>${subs.map(({ b, s }) => {
+          const repo = safeUrl(s.repoUrl);
+          const canDispute = s.status === 'Rejected' && Date.now() <= s.submittedAt + DISPUTE_WINDOW_MS;
+          return `<tr>
+            <td style="font-weight:500;"><a href="#" onclick="viewBounty(${b.id});return false;">${esc(b.title)}</a>
+              ${s.feedback ? `<div class="text-xs text-muted" style="margin-top:4px;">Feedback: ${esc(s.feedback)}</div>` : ''}</td>
+            <td>${repo ? `<a href="${esc(repo)}" target="_blank" rel="noopener" class="sub-link">View Repo ↗</a>` : '—'}</td>
+            <td class="text-muted">${new Date(s.submittedAt).toLocaleDateString()}</td>
+            <td class="mono">${b.reward} ${b.currency}</td>
+            <td>${statusBadge(s.status)}</td>
+            <td>${canDispute ? `<button class="btn btn-ghost btn-sm" onclick="raiseDispute(${b.id},${s.index})">Raise Dispute</button>` : ''}</td>
+          </tr>`; }).join('')}
+        </tbody></table></div>`;
+  } catch (e) { container.innerHTML = `<div class="alert alert-error">${esc(errText(e))}</div>`; }
+}
+
+async function renderDevEarningsPage() {
+  setMain(`
+    <div class="page-title">Earnings</div>
+    <div class="page-subtitle">Your on-chain rewards and pending withdrawals.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Pending BOT</div><div class="stat-card-value text-green" id="earn-bot">—</div><div class="stat-card-sub">Ready to withdraw</div></div>
+      <div class="stat-card"><div class="stat-card-label">Pending USDT</div><div class="stat-card-value text-green" id="earn-usdt">—</div><div class="stat-card-sub">Ready to withdraw</div></div>
+      <div class="stat-card"><div class="stat-card-label">Total Earned (All Time)</div><div class="stat-card-value" id="earn-total" style="font-size:1.1rem;">—</div></div>
+    </div>
+    <div class="flex gap-3 mt-6 mb-8">
+      <button class="btn btn-green btn-lg" onclick="withdrawBOT()">💸 Withdraw BOT</button>
+      <button class="btn btn-green btn-lg" onclick="withdrawUSDT()">💸 Withdraw USDT</button>
+    </div>
+    <h3 style="margin-bottom:16px;">Approved Work</h3>
+    <div id="earn-history"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  try {
+    const pend = await bfRead.getPendingBalance(currentAccount);
+    setElText('earn-bot',  fmtAmt(pend.botBalance, 18) + ' BOT');
+    setElText('earn-usdt', fmtAmt(pend.usdtBalance, usdtDecimals) + ' USDT');
+    const won = mySubs(await loadBounties()).filter(x => x.s.status === 'Approved');
+    let bot = 0n, usdt = 0n;
+    const rows = won.map(({ b, s }) => {
+      const payout = b.rewardRaw - (b.rewardRaw * FEE_BPS) / 10000n;
+      if (b.currency === 'BOT') bot += payout; else usdt += payout;
+      return `<tr><td>${esc(b.title)}</td><td class="mono text-green">${fmtAmt(payout, decOf(b.currency))}</td><td>${b.currency}</td><td>${new Date(s.submittedAt).toLocaleDateString()}</td></tr>`;
+    });
+    setElText('earn-total', fmtPair(bot, usdt));
+    document.getElementById('earn-history').innerHTML = rows.length
+      ? `<div class="table-wrap"><table><thead><tr><th>Bounty</th><th>Payout (after 2.5% fee)</th><th>Currency</th><th>Submitted</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`
+      : emptyState('💸', 'No approved work yet', 'Approved submissions show up here.');
+  } catch (e) { toast(errText(e), 'error'); }
+}
+
+async function renderDevProfilePage() {
+  setMain(`
+    <div class="page-title">My Profile</div>
+    <div class="page-subtitle">Public developer profile visible to all organizations.</div>
+    <div class="card" style="max-width:600px;">
+      <div class="profile-banner" style="margin:-24px -24px 0;"></div>
+      <div class="profile-avatar">${esc((currentAccount || '0x')[2]?.toUpperCase())}</div>
+      <div class="profile-info">
+        <div class="profile-name" id="dp-name">Loading...</div>
+        <div class="profile-role">Developer</div>
+        <div id="dp-github" style="margin-bottom:12px;"></div>
+        <div id="dp-skills" style="margin-bottom:16px;"></div>
+        <div id="dp-bio" class="text-sm" style="color:var(--muted);"></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-6" onclick="openRegisterModal('dev')">Edit Profile</button>`);
+  try {
+    const p = await bfRead.devProfiles(currentAccount);
+    setElText('dp-name', p.username || shortAddr(currentAccount));
+    const gh = safeUrl(p.githubUrl);
+    document.getElementById('dp-github').innerHTML = gh ? `<a href="${esc(gh)}" target="_blank" rel="noopener" class="text-accent text-sm">🐙 ${esc(gh)}</a>` : '';
+    document.getElementById('dp-skills').innerHTML = (p.skills || '').split(',').map(s => s.trim()).filter(Boolean)
+      .map(s => `<span class="badge badge-blue" style="margin-right:5px;">${esc(s)}</span>`).join('');
+    setElText('dp-bio', p.bio);
+  } catch (e) { setElText('dp-name', shortAddr(currentAccount)); }
+}
+
+/* ═══════════════════════════════════════
+   EXPLORE
+═══════════════════════════════════════ */
+async function renderExplorePage() {
+  setMain(`
+    <div class="page-title">Explore Bounties</div>
+    <div class="page-subtitle">Live bounties from the BountyForge contract on BOT Chain.</div>
+    <div class="filters">
+      <input class="search-input" id="explore-search" type="text" placeholder="🔍 Search bounties...">
+      <select class="filter-select" id="filter-status">
+        <option value="">All Status</option><option value="Open">Open</option><option value="Draft">Draft</option>
+        <option value="InReview">In Review</option><option value="Completed">Completed</option>
+        <option value="Disputed">Disputed</option><option value="Cancelled">Cancelled</option>
+      </select>
+      <select class="filter-select" id="filter-eco">
+        <option value="">All Ecosystems</option><option>BOT Chain</option><option>Ethereum</option><option>Celo</option>
+        <option>Polygon</option><option>Stellar/Soroban</option><option>Avalanche</option><option>Arbitrum</option>
+        <option>Solana</option><option>Multi-chain</option>
+      </select>
+      <select class="filter-select" id="filter-currency">
+        <option value="">All Currencies</option><option>BOT</option><option>USDT</option>
+      </select>
+    </div>
+    <div id="explore-grid"><div class="loading-state"><div class="spinner"></div></div></div>`);
+
+  let all;
+  try { all = await loadBounties(); }
+  catch (e) { document.getElementById('explore-grid').innerHTML = `<div class="alert alert-error">Could not load bounties: ${esc(errText(e))}</div>`; return; }
+
+  const render = () => {
+    const search   = (document.getElementById('explore-search')?.value || '').toLowerCase();
+    const status   = document.getElementById('filter-status')?.value || '';
+    const eco      = document.getElementById('filter-eco')?.value || '';
+    const currency = document.getElementById('filter-currency')?.value || '';
+    let list = all;
+    if (search)   list = list.filter(b => b.title.toLowerCase().includes(search) || (b.skills || '').toLowerCase().includes(search));
+    if (status)   list = list.filter(b => b.status === status);
+    if (eco)      list = list.filter(b => b.ecosystem === eco);
+    if (currency) list = list.filter(b => b.currency === currency);
+    const grid = document.getElementById('explore-grid');
+    if (!grid) return;
+    grid.innerHTML = list.length ? list.map(bountyRowHTML).join('')
+      : emptyState('🔍', all.length ? 'No bounties found' : 'No bounties yet', all.length ? 'Try different filters.' : 'Be the first organization to post one.');
+  };
+  render();
+  ['explore-search','filter-status','filter-eco','filter-currency'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', render);
+  });
+}
+
+/* ═══════════════════════════════════════
+   LEADERBOARD
+═══════════════════════════════════════ */
+function leaderRowHTML(d, rank) {
+  return `
+  <div class="leader-row">
+    <div class="leader-rank ${rank <= 3 ? 'top' : ''}">${rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] : rank}</div>
+    <div class="leader-avatar">${esc(d.name[0]?.toUpperCase() || '?')}</div>
+    <div class="leader-info">
+      <div class="leader-name">${esc(d.name)}</div>
+      <div class="leader-skills">${esc(d.skills)}</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="leader-earned">${fmtPair(d.bot, d.usdt)}</div>
+      <div class="text-xs text-muted">${d.count} bount${d.count === 1 ? 'y' : 'ies'}</div>
+    </div>
+  </div>`;
+}
+
+async function renderLeaderboardPage() {
+  setMain(`
+    <div class="page-title">🏆 Leaderboard</div>
+    <div class="page-subtitle">Developers ranked by approved bounties on BOT Chain.</div>
+    <div id="leaders"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  try {
+    const list = await getLeaders();
+    document.getElementById('leaders').innerHTML = list.length
+      ? list.slice(0, 50).map((d, i) => leaderRowHTML(d, i + 1)).join('')
+      : emptyState('🏆', 'No winners yet', 'The leaderboard fills up as submissions get approved.');
+  } catch (e) { document.getElementById('leaders').innerHTML = `<div class="alert alert-error">${esc(errText(e))}</div>`; }
+}
+
+/* ═══════════════════════════════════════
+   ADMIN
+═══════════════════════════════════════ */
+async function renderAdminDashboard() {
+  setMain(`
+    <div class="page-title">🛡️ Admin Panel</div>
+    <div class="page-subtitle">Resolve disputes and withdraw platform fees.</div>
+    <div class="stat-cards">
+      <div class="stat-card"><div class="stat-card-label">Accumulated BOT Fees</div><div class="stat-card-value" id="admin-bot">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Accumulated USDT Fees</div><div class="stat-card-value" id="admin-usdt">—</div></div>
+      <div class="stat-card"><div class="stat-card-label">Open Disputes</div><div class="stat-card-value text-red" id="admin-disputes">—</div></div>
+    </div>
+    <div class="flex gap-3 mb-8">
+      <button class="btn btn-primary" onclick="adminWithdrawFees()">Withdraw Platform Fees</button>
+    </div>
+    <h3 style="margin-bottom:16px;">Active Disputes</h3>
+    <div id="admin-dispute-list"><div class="loading-state"><div class="spinner"></div></div></div>`);
+  try {
+    const [bot, usdt, all] = await Promise.all([bfRead.accumulatedBOTFees(), bfRead.accumulatedUSDTFees(), loadBounties(true)]);
+    setElText('admin-bot',  fmtAmt(bot, 18) + ' BOT');
+    setElText('admin-usdt', fmtAmt(usdt, usdtDecimals) + ' USDT');
+    const disputes = [];
+    all.forEach(b => b.subs.forEach(s => { if (s.status === 'Disputed') disputes.push({ b, s }); }));
+    setElText('admin-disputes', disputes.length);
+    document.getElementById('admin-dispute-list').innerHTML = disputes.length
+      ? disputes.map(({ b, s }) => `
+        <div class="leader-row">
+          <div class="leader-info">
+            <div class="leader-name">${esc(b.title)}</div>
+            <div class="leader-skills">Submission #${s.index} by ${shortAddr(s.developer)}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="viewSubmissions(${b.id})">Review</button>
+        </div>`).join('')
+      : `<div class="card">${emptyState('⚖️', 'No open disputes', 'All disputes have been resolved.')}</div>`;
+  } catch (e) { toast(errText(e), 'error'); }
+}
+
+async function adminWithdrawFees() {
+  try { await bf('withdrawFees'); await refreshAfterTx(); }
+  catch (err) { toast(errText(err), 'error'); }
+}
+
+async function resolveDispute(id, idx, approve) {
+  const resolution = prompt(approve ? 'Note for approving this submission:' : 'Reason for confirming the rejection:');
+  if (resolution === null) return;
+  try {
+    await bf('resolveDispute', [id, idx, approve, resolution]);
+    closeModal('bounty-modal');
+    await refreshAfterTx();
+  } catch (err) { toast(errText(err), 'error'); }
+}
+
+/* ═══════════════════════════════════════
+   BOUNTY DETAIL & SUBMISSIONS
+═══════════════════════════════════════ */
+function viewBounty(id) {
+  const b = bountyById[id];
+  if (!b) return;
+  const me = currentAccount ? currentAccount.toLowerCase() : null;
+  const isOwner = me && b.org === me;
+  const expired = b.deadline < Date.now();
+  const canSubmit = !isOwner && SUBMIT_STATUSES.includes(b.status) && !expired;
+  const dec = decOf(b.currency);
+
+  document.getElementById('modal-bounty-title').textContent = b.title;
+  document.getElementById('modal-bounty-body').innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="flex gap-2 mb-6">${statusBadge(b.status)}<span class="badge badge-gray">${esc(b.ecosystem)}</span></div>
+        <div style="font-size:0.875rem;color:var(--muted);margin-bottom:4px;">${esc(b.org_name)}${b.org_verified ? ' ✓' : ''}</div>
+        <h3 style="font-size:1.3rem;margin-bottom:0;">${esc(b.title)}</h3>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--green);font-family:var(--mono);">${b.reward} ${b.currency}</div>
+        <div style="font-size:0.8rem;color:var(--muted);">per winner · ${b.approvedCount}/${b.maxWinners} awarded</div>
+        ${canSubmit ? `<button class="btn btn-primary btn-sm mt-2" onclick="closeModal('bounty-modal');openSubmitModal(${b.id})">Submit Work</button>` : ''}
+        ${isOwner && b.status === 'Draft' ? `<button class="btn btn-primary btn-sm mt-2" onclick="closeModal('bounty-modal');openDeposit(${b.id})">Fund Bounty</button>` : ''}
+        ${b.subs.length && (isOwner || userRole === 'admin') ? `<button class="btn btn-ghost btn-sm mt-2" onclick="viewSubmissions(${b.id})">Submissions (${b.subs.length})</button>` : ''}
+      </div>
+    </div>
+    <div class="detail-section"><div class="detail-section-title">Description</div><div class="detail-desc">${esc(b.description)}</div></div>
+    <div class="detail-section"><div class="detail-section-title">Technical Requirements</div><div class="detail-desc">${esc(b.requirements || 'See description.')}</div></div>
+    <div class="detail-section">
+      <div class="detail-section-title">Details</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item"><div class="detail-meta-label">Skills</div><div class="detail-meta-value">${esc(b.skills || '—')}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Language</div><div class="detail-meta-value">${esc(b.language || '—')}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Deadline</div><div class="detail-meta-value">${formatDeadline(b.deadline)}</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-label">Submissions</div><div class="detail-meta-value">${b.subs.length}</div></div>
+      </div>
+    </div>
+    ${b.submissionInstructions ? `<div class="detail-section"><div class="detail-section-title">Submission Instructions</div><div class="detail-desc">${esc(b.submissionInstructions)}</div></div>` : ''}
+    <div class="detail-section">
+      <div class="detail-section-title">Escrow</div>
+      <div class="alert alert-info">🔒 ${fmtAmt(b.depositedRaw, dec)} / ${fmtAmt(b.totalRaw, dec)} ${b.currency} currently held in escrow.</div>
+      <a href="${EXPLORER}/address/${CONTRACT_ADDRESS}" target="_blank" rel="noopener" class="text-accent text-sm">View contract on BOTScan →</a>
+    </div>`;
+  openModal('bounty-modal');
+}
+
+async function viewSubmissions(id) {
+  const b = bountyById[id];
+  if (!b) return;
+  const me = currentAccount ? currentAccount.toLowerCase() : null;
+  const isOwner = me && b.org === me;
+  const isAdmin = userRole === 'admin';
+  const names = await devProfilesFor(b.subs.map(s => s.developer));
+
+  document.getElementById('modal-bounty-title').textContent = `Submissions — ${b.title}`;
+  document.getElementById('modal-bounty-body').innerHTML = b.subs.length ? b.subs.map(s => {
+    const repo = safeUrl(s.repoUrl), pr = safeUrl(s.prUrl);
+    const name = names[s.developer]?.username || shortAddr(s.developer);
+    return `
+    <div class="submission-card">
+      <div class="sub-dev-row">
+        <div class="leader-avatar" style="width:30px;height:30px;font-size:12px;">${esc(name[0]?.toUpperCase() || '?')}</div>
+        <div>
+          <div style="font-size:0.875rem;font-weight:500;">${esc(name)}</div>
+          <div class="text-xs text-muted">${shortAddr(s.developer)} · ${new Date(s.submittedAt).toLocaleString()}</div>
+        </div>
+        <div style="margin-left:auto;">${statusBadge(s.status)}</div>
+      </div>
+      <div class="sub-links">
+        ${repo ? `<a href="${esc(repo)}" target="_blank" rel="noopener" class="sub-link">📁 Repository</a>` : ''}
+        ${pr ? `<a href="${esc(pr)}" target="_blank" rel="noopener" class="sub-link">🔀 Pull Request</a>` : ''}
+      </div>
+      ${s.notes ? `<div class="text-sm" style="color:var(--muted);margin-bottom:12px;white-space:pre-wrap;">${esc(s.notes)}</div>` : ''}
+      ${s.feedback ? `<div class="text-xs text-muted" style="margin-bottom:12px;">Feedback: ${esc(s.feedback)}</div>` : ''}
+      ${isOwner && s.status === 'Pending' ? `
+        <div class="sub-actions">
+          <button class="btn btn-green btn-sm" onclick="approveSubmission(${b.id}, ${s.index})">✓ Approve</button>
+          <button class="btn btn-red btn-sm" onclick="openRejectModal(${b.id}, ${s.index})">✗ Reject</button>
+        </div>` : ''}
+      ${isAdmin && s.status === 'Disputed' ? `
+        <div class="sub-actions">
+          <button class="btn btn-green btn-sm" onclick="resolveDispute(${b.id}, ${s.index}, true)">Approve (pay dev)</button>
+          <button class="btn btn-red btn-sm" onclick="resolveDispute(${b.id}, ${s.index}, false)">Confirm Rejection</button>
+        </div>` : ''}
+    </div>`;
+  }).join('') : emptyState('📭', 'No submissions yet', 'Submissions appear here when developers submit their work.');
+  openModal('bounty-modal');
+}
+
+/* ═══════════════════════════════════════
+   CREATE / FUND / CANCEL / RECLAIM
+═══════════════════════════════════════ */
+async function createBounty() {
+  const btn = document.getElementById('create-bounty-btn');
+  try {
+    const title    = val('cb-title');
+    const desc     = val('cb-desc');
+    const reward   = val('cb-reward');
+    const deadline = val('cb-deadline');
+    const currency = parseInt(val('cb-currency'));
+    const winners  = parseInt(val('cb-winners')) || 1;
+
+    if (!title || !desc || !reward || !deadline) throw new Error('Fill in all required fields.');
+    if (winners < 1 || winners > 50) throw new Error('Max winners must be between 1 and 50.');
+    const deadlineTs = Math.floor(new Date(deadline).getTime() / 1000);
+    if (deadlineTs <= Math.floor(Date.now() / 1000)) throw new Error('Deadline must be in the future.');
+
+    await initChain();
+    const rewardRaw = ethers.parseUnits(reward, currency === 0 ? 18 : usdtDecimals);
+    if (rewardRaw <= 0n) throw new Error('Reward must be greater than 0.');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating...';
+
+    const { receipt } = await bf('createBounty', [{
+      title, description: desc, requirements: val('cb-req'), skills: val('cb-skills'),
+      language: val('cb-lang'), ecosystem: val('cb-eco'), submissionInstructions: val('cb-instructions'),
+      rewardPerWinner: rewardRaw, currency, deadline: deadlineTs, maxWinners: winners
+    }]);
+
+    let newId = null;
+    for (const log of receipt.logs) {
+      try { const p = BF_IFACE.parseLog(log); if (p && p.name === 'BountyCreated') { newId = Number(p.args.id); break; } } catch {}
+    }
+    closeModal('create-bounty-modal');
+    await refreshAfterTx();
+    toast('Bounty created. Deposit the reward to open it.', 'success');
+    if (newId && bountyById[newId]) openDeposit(newId);
+  } catch (err) {
+    toast(errText(err), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Bounty';
+  }
+}
+
+function openDeposit(id) {
+  const b = bountyById[id];
+  if (!b) return;
+  const dec = decOf(b.currency);
+  const remaining = b.totalRaw - b.depositedRaw;
+  document.getElementById('deposit-modal-body').innerHTML = `
+    <input type="hidden" id="dep-bounty-id" value="${b.id}">
+    <div class="alert alert-info">Funds go into the BountyForge escrow on BOT Chain mainnet. The bounty opens as soon as it's fully funded.</div>
+    ${b.currency === 'USDT' ? `<div class="alert alert-warning">USDT needs two transactions: approve, then deposit.</div>` : ''}
+    <div class="detail-meta-grid mt-4">
+      <div class="detail-meta-item"><div class="detail-meta-label">Reward Per Winner</div><div class="detail-meta-value">${b.reward} ${b.currency}</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Max Winners</div><div class="detail-meta-value">${b.maxWinners}</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Already Deposited</div><div class="detail-meta-value">${fmtAmt(b.depositedRaw, dec)} ${b.currency}</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">To Deposit</div><div class="detail-meta-value text-green">${fmtAmt(remaining, dec)} ${b.currency}</div></div>
+    </div>`;
+  openModal('deposit-modal');
+}
+
+async function depositReward() {
+  const btn = document.getElementById('deposit-btn');
+  const b   = bountyById[Number(val('dep-bounty-id'))];
+  if (!b) return;
+  const remaining = b.totalRaw - b.depositedRaw;
+  try {
+    if (remaining <= 0n) throw new Error('This bounty is already fully funded.');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Depositing...';
+
+    if (b.currency === 'BOT') {
+      const bal = await readProvider.getBalance(currentAccount);
+      if (bal < remaining) throw new Error(`Not enough BOT. You need ${fmtAmt(remaining, 18)} BOT plus gas.`);
+      await bf('depositBOT', [b.id], remaining);
+    } else {
+      const usdt = new ethers.Contract(usdtAddress, ERC20_ABI, readProvider);
+      const [bal, allowance] = await Promise.all([usdt.balanceOf(currentAccount), usdt.allowance(currentAccount, CONTRACT_ADDRESS)]);
+      if (bal < remaining) throw new Error(`Not enough USDT. You need ${fmtAmt(remaining, usdtDecimals)} USDT.`);
+      if (allowance < remaining) await sendTx(usdtAddress, ERC20_IFACE, 'approve', [CONTRACT_ADDRESS, remaining]);
+      await bf('depositUSDT', [b.id, remaining]);
+    }
+    closeModal('deposit-modal');
+    toast('Bounty funded and open! 🎉', 'success');
+    await refreshAfterTx();
+  } catch (err) {
+    toast(errText(err), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Deposit & Activate';
+  }
+}
+
+async function cancelBounty(id) {
+  if (!confirm('Cancel this bounty? Any deposit is refunded to your wallet.')) return;
+  try { await bf('cancelBounty', [id]); await refreshAfterTx(); }
+  catch (err) { toast(errText(err), 'error'); }
+}
+
+async function reclaimUnused(id) {
+  if (!confirm('Reclaim the unused escrow for this expired bounty?')) return;
+  try { await bf('reclaimUnused', [id]); await refreshAfterTx(); }
+  catch (err) { toast(errText(err), 'error'); }
+}
+
+/* ═══════════════════════════════════════
+   SUBMIT / REVIEW / DISPUTE
+═══════════════════════════════════════ */
+async function openSubmitModal(bountyId) {
+  if (!currentAccount) { toast('Connect your wallet first.', 'error'); return; }
+  if (userRole !== 'dev') { toast('Create a developer profile first.', 'error'); return; }
+  try {
+    if (await bfRead.hasSubmitted(bountyId, currentAccount)) { toast('You already submitted to this bounty.', 'error'); return; }
+  } catch {}
+  document.getElementById('submit-bounty-id').value = bountyId;
+  ['sub-repo','sub-pr','sub-notes'].forEach(id => document.getElementById(id).value = '');
+  openModal('submit-modal');
+}
+
+async function submitWork() {
+  const btn = document.getElementById('submit-work-btn');
+  const bountyId = parseInt(document.getElementById('submit-bounty-id').value);
+  const repo = val('sub-repo');
+  if (!safeUrl(repo)) { toast('Enter a valid repository URL (https://…).', 'error'); return; }
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+    await bf('submitWork', [bountyId, repo, val('sub-pr'), val('sub-notes')]);
+    closeModal('submit-modal');
+    toast('Submission recorded on BOT Chain ✅', 'success');
+    await refreshAfterTx();
+  } catch (err) {
+    toast(errText(err), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit Work';
+  }
+}
+
+async function approveSubmission(bountyId, subIndex) {
+  if (!confirm('Approve this submission? The reward is released to the developer.')) return;
+  try {
+    await bf('approveSubmission', [bountyId, subIndex]);
+    closeModal('bounty-modal');
+    await refreshAfterTx();
+  } catch (err) { toast(errText(err), 'error'); }
+}
+
+function openRejectModal(bountyId, subIndex) {
+  document.getElementById('reject-bounty-id').value = bountyId;
+  document.getElementById('reject-sub-index').value = subIndex;
+  document.getElementById('reject-feedback').value  = '';
+  openModal('reject-modal');
+}
+
+async function confirmReject() {
+  const bountyId = parseInt(document.getElementById('reject-bounty-id').value);
+  const subIndex = parseInt(document.getElementById('reject-sub-index').value);
+  const feedback = val('reject-feedback');
+  if (!feedback) { toast('Feedback is required when rejecting.', 'error'); return; }
+  try {
+    await bf('rejectSubmission', [bountyId, subIndex, feedback]);
+    closeModal('reject-modal');
+    closeModal('bounty-modal');
+    await refreshAfterTx();
+  } catch (err) { toast(errText(err), 'error'); }
+}
+
+async function raiseDispute(bountyId, subIndex) {
+  if (!confirm('Raise a dispute? An admin will review your submission.')) return;
+  try { await bf('raiseDispute', [bountyId, subIndex]); await refreshAfterTx(); }
+  catch (err) { toast(errText(err), 'error'); }
+}
+
+/* ═══════════════════════════════════════
+   WITHDRAWALS
+═══════════════════════════════════════ */
+async function withdrawBOT() {
+  try {
+    const p = await bfRead.getPendingBalance(currentAccount);
+    if (p.botBalance === 0n) throw new Error('No BOT to withdraw.');
+    await bf('withdrawBOT');
+    await refreshAfterTx();
+  } catch (err) { toast(errText(err), 'error'); }
+}
+
+async function withdrawUSDT() {
+  try {
+    const p = await bfRead.getPendingBalance(currentAccount);
+    if (p.usdtBalance === 0n) throw new Error('No USDT to withdraw.');
+    await bf('withdrawUSDT');
+    await refreshAfterTx();
+  } catch (err) { toast(errText(err), 'error'); }
+}
+
+/* ═══════════════════════════════════════
+   LANDING DATA
+═══════════════════════════════════════ */
+async function loadLandingData() {
+  renderFAQ();
+  const grid = document.getElementById('featured-grid');
+  const topDevs = document.getElementById('top-devs-list');
+  try {
+    const all = await loadBounties();
+    const devs = new Set(), orgs = new Set();
+    all.forEach(b => { orgs.add(b.org); b.subs.forEach(s => devs.add(s.developer)); });
+    animateCount('stat-bounties', all.filter(b => b.status === 'Open' || b.status === 'InReview').length);
+    animateCount('stat-devs', devs.size);
+    animateCount('stat-orgs', orgs.size);
+    setElText('stat-rewards', sumPair(all.filter(b => b.status !== 'Draft' && b.status !== 'Cancelled'), 'totalRaw'));
+
+    const featured = all.filter(b => SUBMIT_STATUSES.includes(b.status) && b.deadline > Date.now()).slice(0, 3);
+    grid.innerHTML = featured.length ? featured.map(b => `
+      <div class="bounty-card" onclick="viewBounty(${b.id})">
+        <div class="bounty-card-header">
+          <div>
+            <div class="bounty-card-title">${esc(b.title)}</div>
+            <div class="bounty-org-name">${esc(b.org_name)}</div>
+          </div>
+          <div class="bounty-reward">${b.reward} ${b.currency}</div>
+        </div>
+        <div class="bounty-tags">${tagsHTML(b, 3)}</div>
+        <div class="bounty-meta">
+          <span class="bounty-deadline">⏰ ${formatDeadline(b.deadline)}</span>
+          ${statusBadge(b.status)}
+        </div>
+      </div>`).join('')
+      : emptyState('📋', 'No open bounties yet', 'Organizations can post the first one.');
+
+    const leaders = (await getLeaders()).slice(0, 5);
+    topDevs.innerHTML = leaders.length ? leaders.map((d, i) => leaderRowHTML(d, i + 1)).join('')
+      : emptyState('🏆', 'No winners yet', 'Be the first to get a submission approved.');
+  } catch (e) {
+    const msg = `<div class="alert alert-error">Could not reach BOT Chain: ${esc(errText(e))}</div>`;
+    if (grid) grid.innerHTML = msg;
+    if (topDevs) topDevs.innerHTML = '';
+  }
+}
+
+/* ═══════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════ */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function safeUrl(u) {
+  try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; } catch { return ''; }
+}
+function fmtAmt(raw, dec) {
+  const [i, f = ''] = ethers.formatUnits(raw, dec).split('.');
+  const d = f.slice(0, 4).replace(/0+$/, '');
+  return BigInt(i).toLocaleString('en-US') + (d ? '.' + d : '');
+}
+function errText(e) {
+  return (e && (e.shortMessage || e.reason || e.info?.error?.message || e.data?.message || e.message)) || String(e);
+}
+function cleanRevert(e) {
+  const m = errText(e);
+  const r = m.match(/BF: [^"'\n]+/);
+  return r ? r[0] : m;
+}
+function shortAddr(addr) { return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : ''; }
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function setElText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+function setMain(html) { document.getElementById('main-panel').innerHTML = html; }
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });
 
 function statusBadge(status) {
-  const map = {
-    'Open':      'badge-green',
-    'Draft':     'badge-yellow',
-    'InReview':  'badge-blue',
-    'Completed': 'badge-gray',
-    'Cancelled': 'badge-red',
-    'Disputed':  'badge-purple',
-    'Pending':   'badge-yellow',
-    'Approved':  'badge-green',
-    'Rejected':  'badge-red',
-  };
-  return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
+  const map = { Open:'badge-green', Draft:'badge-yellow', InReview:'badge-blue', Completed:'badge-gray',
+    Cancelled:'badge-red', Disputed:'badge-purple', Pending:'badge-yellow', Approved:'badge-green', Rejected:'badge-red' };
+  return `<span class="badge ${map[status] || 'badge-gray'}">${esc(status)}</span>`;
 }
 
 function formatDeadline(d) {
   if (!d) return '—';
-  const date = new Date(d);
-  const diff = date - new Date();
+  const date = new Date(d), diff = date - new Date();
   if (diff < 0) return 'Expired';
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const days = Math.floor(diff / 86400000);
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
   if (days < 7)  return `${days} days`;
-  return date.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function emptyState(icon, title, desc) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><p class="empty-desc">${desc}</p></div>`;
 }
 
-function toast(msg, type = 'info') {
-  const container = document.getElementById('toast-container');
-  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+function toast(msg, type = 'info', hash) {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
-  container.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(100%)'; el.style.transition = 'all 0.3s'; setTimeout(() => el.remove(), 300); }, 4000);
+  const icon = document.createElement('span'); icon.textContent = icons[type] || 'ℹ️';
+  const text = document.createElement('span'); text.textContent = msg;
+  el.append(icon, text);
+  if (hash) {
+    const a = document.createElement('a');
+    a.href = `${EXPLORER}/tx/${hash}`; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'view tx ↗';
+    a.style.marginLeft = 'auto';
+    el.append(a);
+  }
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0'; el.style.transform = 'translateX(100%)'; el.style.transition = 'all 0.3s';
+    setTimeout(() => el.remove(), 300);
+  }, type === 'error' ? 7000 : 4000);
 }
 
 function animateCount(id, target) {
   const el = document.getElementById(id);
   if (!el) return;
+  if (!target) { el.textContent = '0'; return; }
   let current = 0;
-  const step  = target / 40;
+  const step = target / 40;
   const timer = setInterval(() => {
     current = Math.min(current + step, target);
     el.textContent = Math.floor(current);
@@ -3016,35 +3018,8 @@ function animateCount(id, target) {
   }, 30);
 }
 
-// Mock transaction wrapper — in production, calls the actual contract
-async function mockTx(contractCall) {
-  if (contract && currentAccount) {
-    try {
-      const tx = await contractCall();
-      await tx.wait();
-      return tx;
-    } catch (err) {
-      // If contract not deployed, simulate success for demo
-      if (err.message?.includes('call revert exception') || err.message?.includes('network') || err.code === 'CALL_EXCEPTION') {
-        await new Promise(r => setTimeout(r, 1200)); // simulate delay
-        return { hash: '0x' + Math.random().toString(16).slice(2).padStart(64, '0') };
-      }
-      throw err;
-    }
-  } else {
-    // No contract — simulate
-    await new Promise(r => setTimeout(r, 1200));
-    return { hash: '0x' + Math.random().toString(16).slice(2).padStart(64, '0') };
-  }
-}
-
-/* ═══════════════════════════════════════
-   KEYBOARD SHORTCUTS
-═══════════════════════════════════════ */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-  }
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
 });
 
 /* ═══════════════════════════════════════
@@ -3052,18 +3027,9 @@ document.addEventListener('keydown', e => {
 ═══════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
   loadLandingData();
-
-  // Set min date for deadline input
   const deadlineInput = document.getElementById('cb-deadline');
-  if (deadlineInput) {
-    const now = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    deadlineInput.min = now.toISOString().slice(0, 16);
-  }
-
-  // Auto-reconnect
-  if (window.ethereum && window.ethereum.selectedAddress) {
-    connectWallet();
-  }
+  if (deadlineInput) deadlineInput.min = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+  if (window.ethereum) connectWallet(true);
 });
 </script>
 </body>
